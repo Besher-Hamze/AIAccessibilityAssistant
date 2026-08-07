@@ -20,6 +20,10 @@ class ChatDto {
   @IsOptional()
   @IsBoolean()
   speak?: boolean;
+
+  @IsOptional()
+  @IsString()
+  model?: string;
 }
 
 @Controller('ai')
@@ -40,12 +44,18 @@ export class AiController {
       dto.message,
       req.user.role,
       dto.speak ?? true,
+      dto.model,
     );
   }
 
   @Get('history')
   getHistory(@Request() req: { user: { id: string } }) {
     return this.aiAgent.getHistory(req.user.id);
+  }
+
+  @Get('models')
+  async models() {
+    return this.ollama.listModels();
   }
 
   @Get('health')

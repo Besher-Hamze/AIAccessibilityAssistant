@@ -5,8 +5,14 @@ import '../theme/app_theme.dart';
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final VoidCallback? onSpeak;
+  final bool isSpeaking;
 
-  const MessageBubble({super.key, required this.message, this.onSpeak});
+  const MessageBubble({
+    super.key,
+    required this.message,
+    this.onSpeak,
+    this.isSpeaking = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -75,9 +81,16 @@ class MessageBubble extends StatelessWidget {
                   ),
                   if (onSpeak != null)
                     IconButton(
+                      tooltip: isSpeaking ? 'إيقاف القراءة' : 'قراءة الرسالة',
                       visualDensity: VisualDensity.compact,
                       onPressed: onSpeak,
-                      icon: const Icon(Icons.volume_up_rounded, size: 18, color: AppColors.teal),
+                      icon: Icon(
+                        isSpeaking
+                            ? Icons.stop_circle_rounded
+                            : Icons.volume_up_rounded,
+                        size: 20,
+                        color: isSpeaking ? AppColors.danger : AppColors.teal,
+                      ),
                     ),
                 ],
               ),

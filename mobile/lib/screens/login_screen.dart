@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
 import '../providers/data_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/server_settings_card.dart';
 import 'main_shell.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -40,6 +42,44 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _openServerSettings() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.cream,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            MediaQuery.viewInsetsOf(ctx).bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const ServerSettingsCard(compact: true),
+            ],
+          ),
+        );
+      },
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -57,7 +97,18 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         child: SafeArea(
-          child: Center(
+          child: Stack(
+            children: [
+              Positioned(
+                top: 8,
+                left: 8,
+                child: IconButton(
+                  tooltip: 'إعدادات السيرفر',
+                  onPressed: _openServerSettings,
+                  icon: const Icon(Icons.settings_ethernet_rounded, color: Colors.white),
+                ),
+              ),
+              Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: ConstrainedBox(
@@ -164,6 +215,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               textAlign: TextAlign.center,
                               style: TextStyle(color: AppColors.muted.withValues(alpha: 0.9), fontSize: 12),
                             ),
+                            const SizedBox(height: 10),
+                            TextButton.icon(
+                              onPressed: _openServerSettings,
+                              icon: const Icon(Icons.dns_rounded, size: 18),
+                              label: Text(
+                                'السيرفر: ${ApiConfig.host}',
+                                textDirection: TextDirection.ltr,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -172,6 +232,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
+              ),
+            ],
           ),
         ),
       ),

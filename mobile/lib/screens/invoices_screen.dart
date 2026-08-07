@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../providers/data_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
+import '../utils/report_pdf_helper.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/status_badge.dart';
 import 'create_invoice_screen.dart';
@@ -126,14 +127,30 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     final data = context.watch<DataProvider>();
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const CreateInvoiceScreen()),
-          );
-        },
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('فاتورة جديدة'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'pdf',
+            backgroundColor: AppColors.teal,
+            onPressed: () => generateAndOpenInvoiceReportPdf(
+                  context,
+                  status: _statusFilter,
+                ),
+            child: const Icon(Icons.picture_as_pdf_rounded),
+          ),
+          const SizedBox(height: 10),
+          FloatingActionButton.extended(
+            heroTag: 'create',
+            onPressed: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CreateInvoiceScreen()),
+              );
+            },
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('فاتورة جديدة'),
+          ),
+        ],
       ),
       body: Column(
         children: [

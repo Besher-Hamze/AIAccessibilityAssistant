@@ -75,9 +75,16 @@ class ApiService {
     return _decode(response) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> chat(String message) async {
-    return await _post('/ai/chat', {'message': message, 'speak': true})
-        as Map<String, dynamic>;
+  Future<Map<String, dynamic>> chat(String message, {String? model}) async {
+    return await _post('/ai/chat', {
+      'message': message,
+      'speak': true,
+      if (model != null && model.isNotEmpty) 'model': model,
+    }) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getAiModels() async {
+    return await _get('/ai/models') as Map<String, dynamic>;
   }
 
   Future<List<dynamic>> getChatHistory() async {
@@ -222,5 +229,37 @@ class ApiService {
     }
     final q = params.isEmpty ? '' : '?${params.join('&')}';
     return await _get('/invoices/report$q') as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> getAuditLogs({int limit = 50}) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/audit?limit=$limit'),
+      headers: _headers,
+    );
+    final list = _decode(response) as List<dynamic>;
+    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getUsers() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/auth/users'),
+      headers: _headers,
+    );
+    final list = _decode(response) as List<dynamic>;
+    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<Map<String, dynamic>> createUser({
+    required String name,
+    required String email,
+    required String password,
+    String role = 'USER',
+  }) async {
+    return await _post('/auth/users', {
+      'name': name,
+      'email': email,
+      'password': password,
+      'role': role,
+    }) as Map<String, dynamic>;
   }
 }

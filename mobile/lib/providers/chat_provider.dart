@@ -1,32 +1,165 @@
 import 'dart:io';
-import 'package:audioplayers/audioplayers.dart';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/chat_message.dart';
 import '../services/api_service.dart';
+import '../utils/speech_text.dart';
 
 class ChatProvider extends ChangeNotifier {
+  static const _modelPrefsKey = 'ollama_model';
+
   final ApiService _api;
   final AudioRecorder _recorder = AudioRecorder();
-  final AudioPlayer _player = AudioPlayer();
+  final FlutterTts _tts = FlutterTts();
 
   List<ChatMessage> _messages = [];
+  List<String> _availableModels = [];
+  String? _selectedModel;
   bool _isRecording = false;
   bool _isProcessing = false;
+  bool _isSpeaking = false;
+  String? _speakingText;
   bool _autoSpeak = true;
+  bool _modelsLoading = false;
+  bool _ttsReady = false;
   String? _error;
 
-  ChatProvider(this._api);
+  ChatProvider(this._api) {
+    _initTts();
+    _restoreSelectedModel();
+  }
 
   List<ChatMessage> get messages => _messages;
+  List<String> get availableModels => _availableModels;
+  String? get selectedModel => _selectedModel;
   bool get isRecording => _isRecording;
   bool get isProcessing => _isProcessing;
+  bool get isSpeaking => _isSpeaking;
+  String? get speakingText => _speakingText;
   bool get autoSpeak => _autoSpeak;
+  bool get modelsLoading => _modelsLoading;
   String? get error => _error;
 
-  void toggleAutoSpeak() {
+  Future<void> _initTts() async {
+    try {
+      await _tts.setSpeechRate(0.45);
+      await _tts.setVolume(1.0);
+      await _tts.setPitch(1.0);
+      await _tts.awaitSpeakCompletion(true);
+
+      final languages = await _tts.getLanguages;
+      final langList = (languages is List)
+          ? languages.map((e) => e.toString()).toList()
+          : <String>[];
+
+      String? arabic;
+      for (final candidate in ['ar-SA', 'ar-EG', 'ar-AE', 'ar', 'ar_SA', 'ar_EG']) {
+        if (langList.any((l) => l.toLowerCase() == candidate.toLowerCase())) {
+          arabic = candidate;
+          break;
+        }
+      }
+      arabic ??= langList.firstWhere(
+        (l) => l.toLowerCase().startsWith('ar'),
+        orElse: () => 'ar',
+      );
+      await _tts.setLanguage(arabic);
+
+      if (Platform.isAndroid) {
+        await _tts.setQueueMode(1);
+      }
+
+      _tts.setStartHandler(() {
+        _isSpeaking = true;
+        notifyListeners();
+      });
+      _tts.setCompletionHandler(() {
+        _isSpeaking = false;
+        _speakingText = null;
+        notifyListeners();
+      });
+      _tts.setCancelHandler(() {
+        _isSpeaking = false;
+        _speakingText = null;
+        notifyListeners();
+      });
+      _tts.setErrorHandler((msg) {
+        _isSpeaking = false;
+        _speakingText = null;
+        _error = 'تعذر تشغيل الصوت على الجهاز';
+        notifyListeners();
+        if (kDebugMode) debugPrint('TTS error: $msg');
+      });
+
+      _ttsReady = true;
+    } catch (e) {
+      _ttsReady = false;
+      if (kDebugMode) debugPrint('TTS init failed: $e');
+    }
+  }
+
+  Future<void> _restoreSelectedModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    _selectedModel = prefs.getString(_modelPrefsKey);
+    notifyListeners();
+  }
+
+  Future<void> loadModels() async {
+    _modelsLoading = true;
+    notifyListeners();
+    try {
+      final data = await _api.getAiModels();
+      final models = (data['models'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      _availableModels = models;
+
+      final current = data['current']?.toString();
+      if (_selectedModel == null ||
+          (_selectedModel!.isNotEmpty &&
+              models.isNotEmpty &&
+              !models.contains(_selectedModel))) {
+        _selectedModel = models.contains(current)
+            ? current
+            : (models.isNotEmpty ? models.first : current);
+        if (_selectedModel != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_modelPrefsKey, _selectedModel!);
+        }
+      }
+    } catch (_) {}
+    _modelsLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> setSelectedModel(String? model) async {
+    if (model == null || model.isEmpty || model == _selectedModel) return;
+    _selectedModel = model;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_modelPrefsKey, model);
+    notifyListeners();
+  }
+
+  Future<void> toggleAutoSpeak() async {
+    if (_isSpeaking) {
+      await stopSpeaking();
+    }
     _autoSpeak = !_autoSpeak;
+    notifyListeners();
+  }
+
+  void setAutoSpeak(bool value) {
+    if (_autoSpeak == value) return;
+    _autoSpeak = value;
+    if (!value) {
+      stopSpeaking();
+    }
     notifyListeners();
   }
 
@@ -67,7 +200,7 @@ class ChatProvider extends ChangeNotifier {
 
     var mutated = false;
     try {
-      final result = await _api.chat(text.trim());
+      final result = await _api.chat(text.trim(), model: _selectedModel);
       _messages.removeWhere((m) => m.id == 'loading');
 
       final reply = result['reply'] as String? ?? 'تم.';
@@ -113,8 +246,12 @@ class ChatProvider extends ChangeNotifier {
       return;
     }
 
+    // Stop TTS so mic can capture cleanly.
+    await stopSpeaking();
+
     final dir = await getTemporaryDirectory();
-    final path = '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
+    final path =
+        '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
 
     await _recorder.start(
       const RecordConfig(encoder: AudioEncoder.wav, sampleRate: 16000),
@@ -149,24 +286,55 @@ class ChatProvider extends ChangeNotifier {
       _isProcessing = false;
       await sendTextMessage(text);
     } catch (e) {
-      _error = e.toString();
+      _error = e.toString().replaceAll('Exception: ', '');
       _isProcessing = false;
       notifyListeners();
     }
   }
 
   Future<void> _speak(String text) async {
+    final original = text.trim();
+    if (original.isEmpty) return;
+
+    final cleaned = sanitizeForSpeech(original);
+    if (cleaned.isEmpty) return;
+
+    if (!_ttsReady) {
+      await _initTts();
+    }
+
     try {
-      final bytes = await _api.textToSpeech(text);
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/tts_${DateTime.now().millisecondsSinceEpoch}.mp3');
-      await file.writeAsBytes(bytes);
-      await _player.play(DeviceFileSource(file.path));
-    } catch (_) {}
+      await stopSpeaking();
+      _speakingText = original;
+      _isSpeaking = true;
+      notifyListeners();
+      await _tts.speak(cleaned);
+    } catch (e) {
+      _isSpeaking = false;
+      _speakingText = null;
+      _error = 'تعذر تشغيل الصوت. تأكد من وجود صوت عربي في إعدادات الجهاز.';
+      notifyListeners();
+      if (kDebugMode) debugPrint('TTS speak failed: $e');
+    }
   }
 
   Future<void> speakMessage(String text) async {
+    if (_isSpeaking && _speakingText == text) {
+      await stopSpeaking();
+      return;
+    }
     await _speak(text);
+  }
+
+  Future<void> stopSpeaking() async {
+    try {
+      await _tts.stop();
+    } catch (_) {}
+    if (_isSpeaking || _speakingText != null) {
+      _isSpeaking = false;
+      _speakingText = null;
+      notifyListeners();
+    }
   }
 
   void clearError() {
@@ -177,7 +345,7 @@ class ChatProvider extends ChangeNotifier {
   @override
   void dispose() {
     _recorder.dispose();
-    _player.dispose();
+    _tts.stop();
     super.dispose();
   }
 }

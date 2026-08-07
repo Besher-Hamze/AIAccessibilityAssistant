@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../constants/voice_commands.dart';
+import '../providers/accessibility_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/data_provider.dart';
 import '../theme/app_theme.dart';
@@ -20,7 +22,9 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatProvider>().loadHistory();
+      final chat = context.read<ChatProvider>();
+      chat.loadHistory();
+      chat.loadModels();
     });
   }
 
@@ -39,6 +43,22 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _handleMicTap(ChatProvider chat, AccessibilityProvider a11y) async {
+    if (chat.isProcessing) return;
+    if (!a11y.tapToTalk) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اضغط مطولاً على الميكروفون، أو فعّل "اضغط للتحدث" من الوصولية')),
+      );
+      return;
+    }
+    if (chat.isRecording) {
+      await chat.stopRecordingAndSend();
+      if (mounted) await context.read<DataProvider>().loadAll();
+    } else {
+      await chat.startRecording();
+    }
+  }
+
   void _scrollToBottom() {
     if (!_scrollController.hasClients) return;
     Future.delayed(const Duration(milliseconds: 80), () {
@@ -54,6 +74,8 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final chat = context.watch<ChatProvider>();
+    final a11y = context.watch<AccessibilityProvider>();
+    final micSize = a11y.largeControls ? 64.0 : 52.0;
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
     return Column(
@@ -66,6 +88,108 @@ class _ChatScreenState extends State<ChatScreen> {
             actions: [
               TextButton(onPressed: chat.clearError, child: const Text('إغلاق')),
             ],
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Row(
+            children: [
+              const Icon(Icons.memory_rounded, size: 18, color: AppColors.teal),
+              const SizedBox(width: 8),
+              const Text(
+                'الموديل',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.deepTeal.withValues(alpha: 0.12),
+                    ),
+                  ),
+                  child: chat.modelsLoading && chat.availableModels.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            'جاري جلب الموديلات...',
+                            style: TextStyle(color: AppColors.muted),
+                          ),
+                        )
+                      : DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: chat.availableModels.contains(chat.selectedModel)
+                                ? chat.selectedModel
+                                : null,
+                            hint: Text(
+                              chat.availableModels.isEmpty
+                                  ? 'لا توجد موديلات (تحقق من Ollama)'
+                                  : 'اختر الموديل',
+                            ),
+                            items: chat.availableModels
+                                .map(
+                                  (m) => DropdownMenuItem(
+                                    value: m,
+                                    child: Text(m, overflow: TextOverflow.ellipsis),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: chat.isProcessing
+                                ? null
+                                : (value) => chat.setSelectedModel(value),
+                          ),
+                        ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'تحديث الموديلات',
+                onPressed: chat.modelsLoading ? null : chat.loadModels,
+                icon: chat.modelsLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, color: AppColors.teal),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: a11y.largeControls ? 56 : 48,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            children: VoiceCommands.examples.map((cmd) {
+              return Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: ActionChip(
+                  avatar: const Icon(Icons.bolt_rounded, size: 16, color: AppColors.teal),
+                  label: Text(cmd),
+                  onPressed: chat.isProcessing ? null : () => _send(chat, cmd),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        if (chat.isRecording)
+          Container(
+            width: double.infinity,
+            color: AppColors.danger.withValues(alpha: 0.1),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              a11y.tapToTalk
+                  ? 'جاري التسجيل... اضغط الميكروفون مرة أخرى للإرسال'
+                  : 'جاري التسجيل... أفلت الزر للإرسال',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.danger,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         Expanded(
           child: chat.messages.isEmpty
@@ -90,10 +214,12 @@ class _ChatScreenState extends State<ChatScreen> {
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'اكتب أو اضغط مطولاً على الميكروفون\nمثال: أنشئ فاتورة لمحمد بمنتج برنامج محاسبة',
+                        Text(
+                          a11y.tapToTalk
+                              ? 'اضغط الميكروفون للتحدث، ثم اضغط مرة أخرى للإرسال'
+                              : 'اضغط مطولاً على الميكروفون للتحدث',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.muted, height: 1.5),
+                          style: const TextStyle(color: AppColors.muted, height: 1.5),
                         ),
                       ],
                     ),
@@ -107,7 +233,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     final msg = chat.messages[index];
                     return MessageBubble(
                       message: msg,
-                      onSpeak: msg.isAssistant ? () => chat.speakMessage(msg.content) : null,
+                      onSpeak: msg.isAssistant && !msg.isLoading
+                          ? () => chat.speakMessage(msg.content)
+                          : null,
+                      isSpeaking:
+                          chat.isSpeaking && chat.speakingText == msg.content,
                     );
                   },
                 ),
@@ -129,21 +259,38 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Row(
               children: [
                 IconButton(
-                  tooltip: chat.autoSpeak ? 'إيقاف الصوت' : 'تفعيل الصوت',
-                  onPressed: chat.toggleAutoSpeak,
+                  tooltip: chat.isSpeaking
+                      ? 'إيقاف القراءة الآن'
+                      : (chat.autoSpeak ? 'إيقاف القراءة التلقائية' : 'تفعيل القراءة التلقائية'),
+                  onPressed: () async {
+                    if (chat.isSpeaking) {
+                      await chat.stopSpeaking();
+                    } else {
+                      await chat.toggleAutoSpeak();
+                    }
+                  },
                   icon: Icon(
-                    chat.autoSpeak ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                    color: AppColors.teal,
+                    chat.isSpeaking
+                        ? Icons.stop_circle_rounded
+                        : (chat.autoSpeak
+                            ? Icons.volume_up_rounded
+                            : Icons.volume_off_rounded),
+                    color: chat.isSpeaking ? AppColors.danger : AppColors.teal,
+                    size: a11y.largeControls ? 28 : 24,
                   ),
                 ),
                 Expanded(
                   child: TextField(
                     controller: _textController,
                     textDirection: TextDirection.rtl,
+                    style: TextStyle(fontSize: a11y.largeControls ? 17 : 15),
                     decoration: InputDecoration(
                       hintText: 'اكتب أمرك المحاسبي...',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: a11y.largeControls ? 16 : 12,
+                      ),
                     ),
                     onSubmitted: (text) => _send(chat, text),
                     enabled: !chat.isProcessing,
@@ -151,8 +298,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onLongPressStart: chat.isProcessing ? null : (_) => chat.startRecording(),
-                  onLongPressEnd: chat.isProcessing
+                  onTap: () => _handleMicTap(chat, a11y),
+                  onLongPressStart: a11y.tapToTalk || chat.isProcessing
+                      ? null
+                      : (_) => chat.startRecording(),
+                  onLongPressEnd: a11y.tapToTalk || chat.isProcessing
                       ? null
                       : (_) async {
                           await chat.stopRecordingAndSend();
@@ -162,8 +312,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: 52,
-                    height: 52,
+                    width: micSize,
+                    height: micSize,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: chat.isRecording ? AppColors.danger : AppColors.coral,
@@ -174,6 +324,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Icon(
                       chat.isRecording ? Icons.stop_rounded : Icons.mic_rounded,
                       color: Colors.white,
+                      size: a11y.largeControls ? 30 : 24,
                     ),
                   ),
                 ),
@@ -182,7 +333,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   onPressed: chat.isProcessing
                       ? null
                       : () => _send(chat, _textController.text),
-                  icon: const Icon(Icons.send_rounded),
+                  icon: Icon(Icons.send_rounded, size: a11y.largeControls ? 28 : 24),
                   color: AppColors.teal,
                 ),
               ],

@@ -4,7 +4,7 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log('🌱 Seeding Syrian accounting data...');
 
   const adminPassword = await bcrypt.hash('admin123', 10);
   const userPassword = await bcrypt.hash('user123', 10);
@@ -34,45 +34,45 @@ async function main() {
   const customerData = [
     {
       id: 'seed-customer-1',
-      name: 'محمد أحمد',
-      phone: '0501234567',
-      email: 'mohammed@example.com',
-      address: 'الرياض - حي النرجس',
+      name: 'محمد الأحمد',
+      phone: '0944123456',
+      email: 'mohammed.ahmad@example.com',
+      address: 'دمشق - المزة',
     },
     {
       id: 'seed-customer-2',
-      name: 'علي حسن',
-      phone: '0509876543',
-      email: 'ali@example.com',
-      address: 'جدة - حي الروضة',
+      name: 'علي الحسين',
+      phone: '0933987654',
+      email: 'ali.hussein@example.com',
+      address: 'حلب - الجميلية',
     },
     {
       id: 'seed-customer-3',
-      name: 'فاطمة سعيد',
-      phone: '0551112233',
-      email: 'fatima@example.com',
-      address: 'الدمام - حي الشاطئ',
+      name: 'فاطمة الخوري',
+      phone: '0999112233',
+      email: 'fatima.khoury@example.com',
+      address: 'حمص - الحي العباسي',
     },
     {
       id: 'seed-customer-4',
-      name: 'خالد العتيبي',
-      phone: '0534445566',
-      email: 'khaled@example.com',
-      address: 'مكة المكرمة',
+      name: 'خالد الدمشقي',
+      phone: '0955445566',
+      email: 'khaled.dimashqi@example.com',
+      address: 'اللاذقية - مشروع الصليبة',
     },
     {
       id: 'seed-customer-5',
-      name: 'نورة الشمري',
-      phone: '0547778899',
-      email: 'noura@example.com',
-      address: 'المدينة المنورة',
+      name: 'نورا الحسن',
+      phone: '0966778899',
+      email: 'noura.hasan@example.com',
+      address: 'طرطوس - الكورنيش',
     },
     {
       id: 'seed-customer-6',
-      name: 'شركة النور للتجارة',
-      phone: '0112345678',
-      email: 'info@alnoor.example.com',
-      address: 'الرياض - طريق الملك فهد',
+      name: 'شركة الشام للتجارة',
+      phone: '0112233445',
+      email: 'info@alsham.example.com',
+      address: 'دمشق - شارع بغداد',
     },
   ];
 
@@ -91,61 +91,62 @@ async function main() {
     ),
   );
 
+  // Prices in Syrian Pounds (ل.س)
   const productData = [
     {
       id: 'seed-product-1',
       name: 'خدمة استشارية',
       description: 'ساعة استشارة محاسبية معتمدة',
-      price: 500,
+      price: 250000,
       stock: 999,
     },
     {
       id: 'seed-product-2',
       name: 'برنامج محاسبة',
       description: 'ترخيص سنوي لبرنامج المحاسبة',
-      price: 1200,
+      price: 1500000,
       stock: 50,
     },
     {
       id: 'seed-product-3',
       name: 'دفتر حسابات',
       description: 'دفتر حسابات ورقي 200 صفحة',
-      price: 45,
+      price: 35000,
       stock: 200,
     },
     {
       id: 'seed-product-4',
       name: 'طابعة فواتير',
       description: 'طابعة حرارية للفواتير',
-      price: 850,
+      price: 850000,
       stock: 25,
     },
     {
       id: 'seed-product-5',
       name: 'حزمة تدريب محاسبي',
       description: 'دورة تدريبية لمدة 3 أيام',
-      price: 2500,
+      price: 2500000,
       stock: 40,
     },
     {
       id: 'seed-product-6',
-      name: 'رخصة ضريبية',
-      description: 'خدمة استخراج رخصة ضريبية',
-      price: 350,
+      name: 'خدمة ضريبية',
+      description: 'إعداد وتقديم إقرار ضريبي',
+      price: 400000,
       stock: 100,
     },
     {
       id: 'seed-product-7',
       name: 'جهاز نقاط بيع',
       description: 'جهاز POS مع شاشة لمس',
-      price: 1800,
+      price: 3200000,
       stock: 15,
     },
     {
       id: 'seed-product-8',
       name: 'ورق حراري',
       description: 'رول ورق حراري 80مم × 10',
-      price: 60,
+      price: 75000,
       stock: 300,
     },
   ];
@@ -180,92 +181,147 @@ async function main() {
     {
       number: 'INV-SEED-001',
       customerId: customers[0].id,
-      total: 1450,
+      total: 850000,
       status: InvoiceStatus.PAID,
       date: lastMonth,
       notes: 'فاتورة شهرية',
       items: [
-        { productId: products[0].id, quantity: 2, unitPrice: 500, subtotal: 1000 },
-        { productId: products[2].id, quantity: 10, unitPrice: 45, subtotal: 450 },
+        {
+          productId: products[0].id,
+          quantity: 2,
+          unitPrice: 250000,
+          subtotal: 500000,
+        },
+        {
+          productId: products[2].id,
+          quantity: 10,
+          unitPrice: 35000,
+          subtotal: 350000,
+        },
       ],
     },
     {
       number: 'INV-SEED-002',
       customerId: customers[0].id,
-      total: 1200,
+      total: 1500000,
       status: InvoiceStatus.PENDING,
       date: new Date(now.getFullYear(), now.getMonth(), 5),
       notes: null,
       items: [
-        { productId: products[1].id, quantity: 1, unitPrice: 1200, subtotal: 1200 },
+        {
+          productId: products[1].id,
+          quantity: 1,
+          unitPrice: 1500000,
+          subtotal: 1500000,
+        },
       ],
     },
     {
       number: 'INV-SEED-003',
       customerId: customers[1].id,
-      total: 500,
+      total: 250000,
       status: InvoiceStatus.PAID,
       date: new Date(now.getFullYear(), now.getMonth(), 10),
       notes: null,
       items: [
-        { productId: products[0].id, quantity: 1, unitPrice: 500, subtotal: 500 },
+        {
+          productId: products[0].id,
+          quantity: 1,
+          unitPrice: 250000,
+          subtotal: 250000,
+        },
       ],
     },
     {
       number: 'INV-SEED-004',
       customerId: customers[2].id,
-      total: 3350,
+      total: 3350000,
       status: InvoiceStatus.PAID,
       date: twoMonthsAgo,
       notes: 'عقد تدريب',
       items: [
-        { productId: products[4].id, quantity: 1, unitPrice: 2500, subtotal: 2500 },
-        { productId: products[3].id, quantity: 1, unitPrice: 850, subtotal: 850 },
+        {
+          productId: products[4].id,
+          quantity: 1,
+          unitPrice: 2500000,
+          subtotal: 2500000,
+        },
+        {
+          productId: products[3].id,
+          quantity: 1,
+          unitPrice: 850000,
+          subtotal: 850000,
+        },
       ],
     },
     {
       number: 'INV-SEED-005',
       customerId: customers[3].id,
-      total: 1860,
+      total: 3275000,
       status: InvoiceStatus.PENDING,
       date: new Date(now.getFullYear(), now.getMonth(), 12),
       notes: null,
       items: [
-        { productId: products[6].id, quantity: 1, unitPrice: 1800, subtotal: 1800 },
-        { productId: products[7].id, quantity: 1, unitPrice: 60, subtotal: 60 },
+        {
+          productId: products[6].id,
+          quantity: 1,
+          unitPrice: 3200000,
+          subtotal: 3200000,
+        },
+        {
+          productId: products[7].id,
+          quantity: 1,
+          unitPrice: 75000,
+          subtotal: 75000,
+        },
       ],
     },
     {
       number: 'INV-SEED-006',
       customerId: customers[5].id,
-      total: 2400,
+      total: 3000000,
       status: InvoiceStatus.PAID,
       date: lastMonth,
       notes: 'ترخيص برامج للشركة',
       items: [
-        { productId: products[1].id, quantity: 2, unitPrice: 1200, subtotal: 2400 },
+        {
+          productId: products[1].id,
+          quantity: 2,
+          unitPrice: 1500000,
+          subtotal: 3000000,
+        },
       ],
     },
     {
       number: 'INV-SEED-007',
       customerId: customers[4].id,
-      total: 350,
+      total: 400000,
       status: InvoiceStatus.DRAFT,
       date: new Date(now.getFullYear(), now.getMonth(), 18),
       notes: 'مسودة',
       items: [
-        { productId: products[5].id, quantity: 1, unitPrice: 350, subtotal: 350 },
+        {
+          productId: products[5].id,
+          quantity: 1,
+          unitPrice: 400000,
+          subtotal: 400000,
+        },
       ],
     },
     {
       number: 'INV-SEED-008',
       customerId: customers[1].id,
-      total: 900,
+      total: 700000,
       status: InvoiceStatus.CANCELLED,
       date: twoMonthsAgo,
       notes: 'أُلغيت بطلب العميل',
       items: [
-        { productId: products[2].id, quantity: 20, unitPrice: 45, subtotal: 900 },
+        {
+          productId: products[2].id,
+          quantity: 20,
+          unitPrice: 35000,
+          subtotal: 700000,
+        },
       ],
     },
   ];
@@ -284,7 +340,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Seed completed');
+  console.log('✅ Seed completed (Syria / SYP)');
   console.log('   Admin: admin@accounting.local / admin123');
   console.log('   User:  user@accounting.local / user123');
   console.log(

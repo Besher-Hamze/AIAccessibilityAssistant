@@ -17,6 +17,33 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    const user = await this.createUserRecord(dto);
+    return {
+      user,
+      accessToken: this.signToken(user.id, user.email, user.role),
+    };
+  }
+
+  /** Admin creates a user without switching the current session. */
+  async createUserByAdmin(dto: RegisterDto) {
+    const user = await this.createUserRecord(dto);
+    return { user };
+  }
+
+  async listUsers() {
+    return this.prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  private async createUserRecord(dto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -25,7 +52,7 @@ export class AuthService {
     }
 
     const hashed = await bcrypt.hash(dto.password, 10);
-    const user = await this.prisma.user.create({
+    return this.prisma.user.create({
       data: {
         email: dto.email,
         password: hashed,
@@ -40,11 +67,6 @@ export class AuthService {
         createdAt: true,
       },
     });
-
-    return {
-      user,
-      accessToken: this.signToken(user.id, user.email, user.role),
-    };
   }
 
   async login(dto: LoginDto) {

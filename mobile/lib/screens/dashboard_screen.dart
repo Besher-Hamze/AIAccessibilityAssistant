@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../constants/voice_commands.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/data_provider.dart';
+import '../providers/demo_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
+import '../utils/report_pdf_helper.dart';
 import '../widgets/status_badge.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -12,10 +15,25 @@ class DashboardScreen extends StatelessWidget {
 
   const DashboardScreen({super.key, required this.onOpenChat});
 
+  Future<void> _downloadPdf(BuildContext context, {String? status}) async {
+    await generateAndOpenInvoiceReportPdf(context, status: status);
+  }
+
+  Future<void> _runDemo(BuildContext context) async {
+    onOpenChat();
+    await Future.delayed(const Duration(milliseconds: 250));
+    if (!context.mounted) return;
+    await context.read<DemoProvider>().runDemo(
+          context.read<ChatProvider>(),
+          context.read<DataProvider>(),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final data = context.watch<DataProvider>();
+    final demo = context.watch<DemoProvider>();
     final s = data.summary;
 
     return RefreshIndicator(
@@ -62,6 +80,49 @@ class DashboardScreen extends StatelessWidget {
                     label: const Text('تحدث مع المساعد'),
                   ),
                 ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white70),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: demo.running ? null : () => _runDemo(context),
+                        icon: demo.running
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.play_circle_outline_rounded),
+                        label: Text(demo.running ? 'جاري العرض...' : 'عرض تجريبي'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white70),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: () => _downloadPdf(context),
+                        icon: const Icon(Icons.picture_as_pdf_outlined),
+                        label: const Text('تقرير PDF'),
+                      ),
+                    ),
+                  ],
+                ),
+                if (demo.status != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    demo.status!,
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12),
+                  ),
+                ],
               ],
             ),
           ),
@@ -146,12 +207,7 @@ class DashboardScreen extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              'اعرض قائمة المنتجات',
-              'ما ملخص المحاسبة؟',
-              'اعرض فواتير محمد',
-              'أنشئ تقريراً عن الفواتير المعلقة',
-            ].map((cmd) {
+            children: VoiceCommands.examples.take(4).map((cmd) {
               return ActionChip(
                 avatar: const Icon(Icons.bolt_rounded, size: 16, color: AppColors.teal),
                 label: Text(cmd),

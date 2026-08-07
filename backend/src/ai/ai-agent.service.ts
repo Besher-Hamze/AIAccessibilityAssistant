@@ -26,6 +26,7 @@ export class AiAgentService {
     message: string,
     userRole: Role,
     speak = true,
+    model?: string,
   ): Promise<ChatResult> {
     await this.prisma.chatMessage.create({
       data: { userId, role: 'user', content: message },
@@ -47,7 +48,7 @@ export class AiAgentService {
 
     messages.push({ role: 'user', content: message });
 
-    const response = await this.ollama.chat(messages);
+    const response = await this.ollama.chat(messages, model);
 
     if (response.tool_calls?.length) {
       const call = response.tool_calls[0];
@@ -57,11 +58,12 @@ export class AiAgentService {
           ? JSON.parse(call.function.arguments)
           : call.function.arguments;
 
-      this.logger.log(`Executing tool: ${toolName}`);
+      this.logger.log(`Executing tool: ${toolName} (model=${model ?? 'default'})`);
       const toolResult = await this.tools.execute(toolName, args, userRole);
 
       await this.tools.logAudit(userId, toolName, 'ai_command', undefined, {
         args,
+        model: model ?? null,
         resultPreview: Array.isArray(toolResult)
           ? `${toolResult.length} records`
           : 'object',
@@ -71,6 +73,7 @@ export class AiAgentService {
         message,
         toolName,
         toolResult,
+        model,
       );
 
       await this.prisma.chatMessage.create({

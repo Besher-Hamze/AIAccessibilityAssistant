@@ -15,21 +15,46 @@ interface OllamaMessage {
 export class OllamaService {
   private readonly logger = new Logger(OllamaService.name);
   private readonly baseUrl: string;
-  private readonly model: string;
+  private readonly defaultModel: string;
 
   constructor(private config: ConfigService) {
     this.baseUrl = config.get('OLLAMA_BASE_URL', 'http://localhost:11434');
-    this.model = config.get('OLLAMA_MODEL', 'qwen2.5:3b');
+    this.defaultModel = config.get('OLLAMA_MODEL', 'qwen2.5:3b');
   }
 
-  async chat(messages: OllamaMessage[]) {
+  resolveModel(model?: string) {
+    const value = model?.trim();
+    return value && value.length > 0 ? value : this.defaultModel;
+  }
+
+  async listModels(): Promise<{
+    ok: boolean;
+    models: string[];
+    current: string;
+  }> {
+    try {
+      const { data } = await axios.get(`${this.baseUrl}/api/tags`, {
+        timeout: 5000,
+      });
+      const models = ((data.models as Array<{ name?: string }> | undefined) ?? [])
+        .map((m) => m.name)
+        .filter((name): name is string => !!name)
+        .sort((a, b) => a.localeCompare(b));
+      return { ok: true, models, current: this.defaultModel };
+    } catch {
+      return { ok: false, models: [], current: this.defaultModel };
+    }
+  }
+
+  async chat(messages: OllamaMessage[], model?: string) {
+    const selectedModel = this.resolveModel(model);
     const systemPrompt = SYSTEM_PROMPT.replace(
       '{{TODAY}}',
       new Date().toISOString().split('T')[0],
     );
 
     const payload = {
-      model: this.model,
+      model: selectedModel,
       messages: [{ role: 'system', content: systemPrompt }, ...messages],
       tools: AI_TOOLS,
       stream: false,
@@ -40,18 +65,21 @@ export class OllamaService {
       const { data } = await axios.post(
         `${this.baseUrl}/api/chat`,
         payload,
-        { timeout: 120000 },
+        { timeout: 180000 },
       );
       return data.message as OllamaMessage;
     } catch (error) {
-      this.logger.warn('Ollama tools API failed, trying JSON mode');
-      return this.chatJsonFallback(messages, systemPrompt);
+      this.logger.warn(
+        `Ollama tools API failed for ${selectedModel}, trying JSON mode`,
+      );
+      return this.chatJsonFallback(messages, systemPrompt, selectedModel);
     }
   }
 
   private async chatJsonFallback(
     messages: OllamaMessage[],
     systemPrompt: string,
+    selectedModel: string,
   ) {
     const toolDesc = AI_TOOLS.map(
       (t) => `- ${t.function.name}: ${t.function.description}`,
@@ -72,13 +100,13 @@ ${toolDesc}
     const { data } = await axios.post(
       `${this.baseUrl}/api/chat`,
       {
-        model: this.model,
+        model: selectedModel,
         messages: [{ role: 'system', content: jsonPrompt }, ...messages],
         stream: false,
         format: 'json',
         options: { temperature: 0.2 },
       },
-      { timeout: 120000 },
+      { timeout: 180000 },
     );
 
     const content = data.message?.content ?? '{}';
@@ -120,11 +148,13 @@ ${toolDesc}
     userMessage: string,
     toolName: string,
     toolResult: unknown,
+    model?: string,
   ) {
+    const selectedModel = this.resolveModel(model);
     const { data } = await axios.post(
       `${this.baseUrl}/api/chat`,
       {
-        model: this.model,
+        model: selectedModel,
         messages: [
           {
             role: 'system',
@@ -139,20 +169,18 @@ ${toolDesc}
         stream: false,
         options: { temperature: 0.3 },
       },
-      { timeout: 120000 },
+      { timeout: 180000 },
     );
 
     return (data.message?.content as string) ?? 'تم تنفيذ العملية بنجاح.';
   }
 
   async checkHealth() {
-    try {
-      const { data } = await axios.get(`${this.baseUrl}/api/tags`, {
-        timeout: 5000,
-      });
-      return { ok: true, models: data.models ?? [] };
-    } catch {
-      return { ok: false, models: [] };
-    }
+    const listed = await this.listModels();
+    return {
+      ok: listed.ok,
+      models: listed.models.map((name) => ({ name })),
+      current: listed.current,
+    };
   }
 }

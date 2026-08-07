@@ -1,0 +1,511 @@
+<mxfile host="app.diagrams.net" agent="Cursor" pages="6">
+  <diagram id="arch" name="1. المخطط العام">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title1" value="مساعد ذكي صوتي لتمكين ذوي الإعاقة الحركية - نظام محاسبة&#xa;المخطط المعماري العام" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="800" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="user" value="المستخدم&#xa;(ذو إعاقة حركية)" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="320" width="50" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="flutter" value="تطبيق Flutter&#xa;(Mobile / Desktop)&#xa;&#xa;• واجهة محادثة&#xa;• تسجيل صوت&#xa;• عرض النتائج&#xa;• Text-to-Speech" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="220" y="280" width="180" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="nestjs" value="NestJS Backend&#xa;(Node.js)&#xa;&#xa;• JWT Authentication&#xa;• RBAC (Admin/User)&#xa;• REST API&#xa;• AI Agent&#xa;• Function Calling" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="520" y="260" width="200" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="postgres" value="PostgreSQL&#xa;+ Prisma ORM&#xa;&#xa;• Users&#xa;• Customers&#xa;• Products&#xa;• Invoices&#xa;• Chat / Audit" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="820" y="270" width="160" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="ollama" value="Ollama&#xa;Qwen 2.5 : 7b&#xa;&#xa;• فهم اللغة العربية&#xa;• Function Calling&#xa;• توليد الردود" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="520" y="480" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="aiservice" value="Python AI Service&#xa;(FastAPI)&#xa;&#xa;• Whisper STT&#xa;• Edge TTS (عربي)&#xa;• Port 8000" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="220" y="480" width="180" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="user" target="flutter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1l" value="صوت / نص" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" connectable="0" parent="e1">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="flutter" target="nestjs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2l" value="HTTP / REST&#xa;Bearer JWT" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" connectable="0" parent="e2">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="nestjs" target="postgres">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3l" value="Prisma" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" connectable="0" parent="e3">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9673a6;dashed=1;" edge="1" parent="1" source="nestjs" target="ollama">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4l" value="Ollama API&#xa;:11434" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" connectable="0" parent="e4">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;dashed=1;" edge="1" parent="1" source="nestjs" target="aiservice">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5l" value="STT / TTS" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" connectable="0" parent="e5">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1" source="flutter" target="aiservice">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="310" y="450" />
+              <mxPoint x="310" y="450" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6l" value="ملف صوتي" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" connectable="0" parent="e6">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend" value="&lt;b&gt;التقنيات الرئيسية&lt;/b&gt;&lt;br&gt;Flutter | NestJS | PostgreSQL | Prisma&lt;br&gt;Ollama (Qwen) | Whisper | Edge TTS | JWT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="820" y="480" width="280" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="flow" name="2. تدفق البيانات">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ftitle" value="مخطط تدفق البيانات - من الصوت إلى النتيجة" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="700" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="1. المستخدم&#xa;يتحدث أو يكتب" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="120" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="2. Speech-to-Text&#xa;(Whisper)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="280" y="120" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="3. NestJS Backend&#xa;يستقبل النص" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="120" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" value="4. AI Agent + LLM&#xa;(Qwen via Ollama)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="720" y="120" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" value="5. Function Calling&#xa;اختيار العملية" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="740" y="260" width="140" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" value="6. تنفيذ على&#xa;PostgreSQL" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="520" y="270" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s7" value="7. LLM يلخّص&#xa;النتيجة بالعربية" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="280" y="270" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s8" value="8. Text-to-Speech&#xa;(Edge TTS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="270" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s9" value="9. عرض + قراءة&#xa;النتيجة للمستخدم" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="420" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="tools" value="&lt;b&gt;الوظائف المتاحة (Tools)&lt;/b&gt;&lt;br&gt;search_customers | get_customer_invoices&lt;br&gt;search_invoices | get_latest_invoice&lt;br&gt;list_products | get_accounting_summary&lt;br&gt;generate_report | create_customer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="520" y="420" width="380" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="example" value="&lt;b&gt;مثال:&lt;/b&gt; &quot;أريد فواتير محمد في الشهر الماضي&quot;&#xa;→ get_customer_invoices(customerName=محمد)&#xa;→ &quot;يوجد 5 فواتير للعميل محمد...&quot;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#4caf50;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="540" width="820" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fe1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" parent="1" source="s1" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fe2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" parent="1" source="s2" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fe3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" parent="1" source="s3" target="s4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fe4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" parent="1" source="s4" target="s5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fe5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" parent="1" source="s5" target="s6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fe6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" parent="1" source="s6" target="s7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fe7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" parent="1" source="s7" target="s8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fe8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" parent="1" source="s8" target="s9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="skip" value="إذا كان إدخال نصي&#xa;يتخطى Whisper" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#fbc02d;fontSize=10;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="30" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="fskip" style="edgeStyle=orthogonalEdgeStyle;rounded=0;dashed=1;strokeColor=#fbc02d;" edge="1" parent="1" source="s1" target="s3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="150" y="80" />
+              <mxPoint x="580" y="80" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="erd" name="3. قاعدة البيانات">
+    <mxGraphModel dx="1422" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="ertitle" value="مخطط قاعدة البيانات (ERD) — PostgreSQL + Prisma" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="400" y="15" width="700" height="40" as="geometry"/>
+        </mxCell>        <mxCell id="auth_zone" value="نطاق المستخدمين والمحادثة" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;align=center;fontSize=12;fontStyle=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="280" height="30" as="geometry"/>
+        </mxCell>        <mxCell id="acc_zone" value="نطاق المحاسبة" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=center;fontSize=12;fontStyle=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="70" width="760" height="30" as="geometry"/>
+        </mxCell>        <mxCell id="t_user" value="User" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="120" width="220" height="182" as="geometry"/>
+        </mxCell>
+        <mxCell id="u1" value="🔑 id : UUID (PK)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_user"><mxGeometry y="28" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="u2" value="email : String (unique)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_user"><mxGeometry y="54" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="u3" value="password : String" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_user"><mxGeometry y="80" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="u4" value="name : String" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_user"><mxGeometry y="106" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="u5" value="role : ADMIN | USER" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_user"><mxGeometry y="132" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="u6" value="createdAt / updatedAt" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_user"><mxGeometry y="158" width="220" height="24" as="geometry"/></mxCell>        <mxCell id="t_chat" value="ChatMessage" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="360" width="220" height="182" as="geometry"/>
+        </mxCell>
+        <mxCell id="ch1" value="🔑 id : UUID (PK)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_chat"><mxGeometry y="28" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="ch2" value="🔗 userId : UUID (FK → User)" style="text;strokeColor=none;fillColor=#fff2cc;align=left;fontSize=11;fontStyle=2;" vertex="1" parent="t_chat"><mxGeometry y="54" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="ch3" value="role : String (user|assistant)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_chat"><mxGeometry y="80" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="ch4" value="content : String" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_chat"><mxGeometry y="106" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="ch5" value="metadata : JSON?" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_chat"><mxGeometry y="132" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="ch6" value="createdAt : DateTime" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_chat"><mxGeometry y="158" width="220" height="24" as="geometry"/></mxCell>        <mxCell id="t_audit" value="AuditLog" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="600" width="220" height="182" as="geometry"/>
+        </mxCell>
+        <mxCell id="a1" value="🔑 id : UUID (PK)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_audit"><mxGeometry y="28" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="a2" value="🔗 userId : UUID (FK → User)" style="text;strokeColor=none;fillColor=#fff2cc;align=left;fontSize=11;fontStyle=2;" vertex="1" parent="t_audit"><mxGeometry y="54" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="a3" value="action : String" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_audit"><mxGeometry y="80" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="a4" value="entity : String" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_audit"><mxGeometry y="106" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="a5" value="entityId : String?" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_audit"><mxGeometry y="132" width="220" height="26" as="geometry"/></mxCell>
+        <mxCell id="a6" value="details : JSON? / createdAt" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_audit"><mxGeometry y="158" width="220" height="24" as="geometry"/></mxCell>        <mxCell id="t_customer" value="Customer" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="480" y="120" width="240" height="182" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1" value="🔑 id : UUID (PK)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_customer"><mxGeometry y="28" width="240" height="26" as="geometry"/></mxCell>
+        <mxCell id="c2" value="name : String" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_customer"><mxGeometry y="54" width="240" height="26" as="geometry"/></mxCell>
+        <mxCell id="c3" value="phone : String?" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_customer"><mxGeometry y="80" width="240" height="26" as="geometry"/></mxCell>
+        <mxCell id="c4" value="email : String?" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_customer"><mxGeometry y="106" width="240" height="26" as="geometry"/></mxCell>
+        <mxCell id="c5" value="address : String?" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_customer"><mxGeometry y="132" width="240" height="26" as="geometry"/></mxCell>
+        <mxCell id="c6" value="createdAt / updatedAt" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_customer"><mxGeometry y="158" width="240" height="24" as="geometry"/></mxCell>        <mxCell id="t_product" value="Product" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="120" width="240" height="182" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1" value="🔑 id : UUID (PK)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_product"><mxGeometry y="28" width="240" height="26" as="geometry"/></mxCell>
+        <mxCell id="p2" value="name : String" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_product"><mxGeometry y="54" width="240" height="26" as="geometry"/></mxCell>
+        <mxCell id="p3" value="description : String?" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_product"><mxGeometry y="80" width="240" height="26" as="geometry"/></mxCell>
+        <mxCell id="p4" value="price : Decimal(12,2)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_product"><mxGeometry y="106" width="240" height="26" as="geometry"/></mxCell>
+        <mxCell id="p5" value="stock : Int" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_product"><mxGeometry y="132" width="240" height="26" as="geometry"/></mxCell>
+        <mxCell id="p6" value="createdAt / updatedAt" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_product"><mxGeometry y="158" width="240" height="24" as="geometry"/></mxCell>        <mxCell id="t_invoice" value="Invoice" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="480" y="400" width="260" height="234" as="geometry"/>
+        </mxCell>
+        <mxCell id="i1" value="🔑 id : UUID (PK)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_invoice"><mxGeometry y="28" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="i2" value="number : String (unique)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_invoice"><mxGeometry y="54" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="i3" value="🔗 customerId : UUID (FK → Customer)" style="text;strokeColor=none;fillColor=#fff2cc;align=left;fontSize=11;fontStyle=2;" vertex="1" parent="t_invoice"><mxGeometry y="80" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="i4" value="total : Decimal(12,2)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_invoice"><mxGeometry y="106" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="i5" value="status : DRAFT|PAID|PENDING|CANCELLED" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_invoice"><mxGeometry y="132" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="i6" value="notes : String?" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_invoice"><mxGeometry y="158" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="i7" value="date / createdAt / updatedAt" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_invoice"><mxGeometry y="184" width="260" height="24" as="geometry"/></mxCell>        <mxCell id="t_item" value="InvoiceItem&#xa;(جدول ربط)" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=40;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="820" y="420" width="260" height="208" as="geometry"/>
+        </mxCell>
+        <mxCell id="it1" value="🔑 id : UUID (PK)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_item"><mxGeometry y="40" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="it2" value="🔗 invoiceId : UUID (FK → Invoice)" style="text;strokeColor=none;fillColor=#fff2cc;align=left;fontSize=11;fontStyle=2;" vertex="1" parent="t_item"><mxGeometry y="66" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="it3" value="🔗 productId : UUID (FK → Product)" style="text;strokeColor=none;fillColor=#fff2cc;align=left;fontSize=11;fontStyle=2;" vertex="1" parent="t_item"><mxGeometry y="92" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="it4" value="quantity : Int" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_item"><mxGeometry y="118" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="it5" value="unitPrice : Decimal(12,2)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_item"><mxGeometry y="144" width="260" height="26" as="geometry"/></mxCell>
+        <mxCell id="it6" value="subtotal : Decimal(12,2)" style="text;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="t_item"><mxGeometry y="170" width="260" height="26" as="geometry"/></mxCell>        <mxCell id="r_user_chat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#9673a6;startArrow=ERone;endArrow=ERzeroToMany;startFill=0;endFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="t_user" target="t_chat">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="r_user_chat_l" value="1 : N&#xa;يملك رسائل" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;backgroundColor=#ffffff;" vertex="1" connectable="0" parent="r_user_chat">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint x="15" as="offset"/></mxGeometry>
+        </mxCell>        <mxCell id="r_user_audit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#666666;startArrow=ERone;endArrow=ERzeroToMany;startFill=0;endFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="t_user" target="t_audit">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="40" y="211"/><mxPoint x="40" y="691"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="r_user_audit_l" value="1 : N&#xa;سجل عمليات" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;backgroundColor=#ffffff;" vertex="1" connectable="0" parent="r_user_audit">
+          <mxGeometry x="-0.3" relative="1" as="geometry"><mxPoint x="-10" y="-20" as="offset"/></mxGeometry>
+        </mxCell>        <mxCell id="r_cust_inv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#82b366;startArrow=ERone;endArrow=ERzeroToMany;startFill=0;endFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="t_customer" target="t_invoice">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="r_cust_inv_l" value="1 : N&#xa;له فواتير&#xa;onDelete: Cascade" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;backgroundColor=#ffffff;" vertex="1" connectable="0" parent="r_cust_inv">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint x="20" as="offset"/></mxGeometry>
+        </mxCell>        <mxCell id="r_inv_item" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#b85450;startArrow=ERone;endArrow=ERzeroToMany;startFill=0;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;" edge="1" parent="1" source="t_invoice" target="t_item">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="r_inv_item_l" value="1 : N&#xa;يحتوي بنود&#xa;onDelete: Cascade" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;backgroundColor=#ffffff;" vertex="1" connectable="0" parent="r_inv_item">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint y="-15" as="offset"/></mxGeometry>
+        </mxCell>        <mxCell id="r_prod_item" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#d6b656;startArrow=ERone;endArrow=ERzeroToMany;startFill=0;endFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.65;entryDx=0;entryDy=0;" edge="1" parent="1" source="t_product" target="t_item">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1120" y="340"/><mxPoint x="1120" y="555"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="r_prod_item_l" value="1 : N&#xa;يظهر في بنود" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;backgroundColor=#ffffff;" vertex="1" connectable="0" parent="r_prod_item">
+          <mxGeometry x="0.2" relative="1" as="geometry"><mxPoint x="15" as="offset"/></mxGeometry>
+        </mxCell>        <mxCell id="legend" value="&lt;b&gt;دليل العلاقات&lt;/b&gt;&lt;br&gt;🔑 = Primary Key&amp;nbsp;&amp;nbsp;&amp;nbsp; 🔗 = Foreign Key&amp;nbsp;&amp;nbsp;&amp;nbsp; 1:N = واحد إلى كثير&lt;br&gt;&lt;br&gt;&lt;b&gt;InvoiceItem&lt;/b&gt; جدول ربط (Associative Entity) بين Invoice و Product — علاقة N:M&lt;br&gt;Customer → Invoice → InvoiceItem ← Product" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=left;spacingLeft=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="480" y="680" width="760" height="90" as="geometry"/>
+        </mxCell>        <mxCell id="mn_note" value="N : M&#xa;(via InvoiceItem)" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=top;align=center;fillColor=#fff9c4;strokeColor=#fbc02d;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="820" y="120" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="mn_line1" style="endArrow=none;dashed=1;strokeColor=#fbc02d;" edge="1" parent="1" source="mn_note" target="t_invoice">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="mn_line2" style="endArrow=none;dashed=1;strokeColor=#fbc02d;" edge="1" parent="1" source="mn_note" target="t_product">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="seq" name="4. مخطط التسلسل">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="stitle" value="مخطط التسلسل (Sequence) - أمر صوتي: &quot;اعرض فواتير محمد&quot;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="800" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lu" value="User" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#dae8fc;strokeColor=#6c8ebf;size=40;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="80" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="lf" value="Flutter" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#fff2cc;strokeColor=#d6b656;size=40;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="220" y="80" width="80" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="lv" value="Voice&#xa;Service" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#dae8fc;strokeColor=#6c8ebf;size=40;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="360" y="80" width="80" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="lb" value="NestJS&#xa;Backend" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#d5e8d4;strokeColor=#82b366;size=40;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="500" y="80" width="80" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="lo" value="Ollama&#xa;Qwen" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#e1d5e7;strokeColor=#9673a6;size=40;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="640" y="80" width="80" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="ld" value="PostgreSQL" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#f8cecc;strokeColor=#b85450;size=40;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="780" y="80" width="80" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="m1" value="1: تسجيل صوت" style="html=1;verticalAlign=bottom;endArrow=block;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="120" y="150" as="sourcePoint" />
+            <mxPoint x="260" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m2" value="2: POST /voice/stt (audio)" style="html=1;verticalAlign=bottom;endArrow=block;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="190" as="sourcePoint" />
+            <mxPoint x="400" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m3" value="3: &quot;اعرض فواتير محمد&quot;" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="400" y="220" as="sourcePoint" />
+            <mxPoint x="260" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m4" value="4: POST /ai/chat" style="html=1;verticalAlign=bottom;endArrow=block;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="260" as="sourcePoint" />
+            <mxPoint x="540" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m5" value="5: chat + tools" style="html=1;verticalAlign=bottom;endArrow=block;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="310" as="sourcePoint" />
+            <mxPoint x="680" y="310" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m6" value="6: tool_call: get_customer_invoices" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="680" y="350" as="sourcePoint" />
+            <mxPoint x="540" y="350" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m7" value="7: SELECT invoices" style="html=1;verticalAlign=bottom;endArrow=block;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="390" as="sourcePoint" />
+            <mxPoint x="820" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m8" value="8: rows" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="820" y="420" as="sourcePoint" />
+            <mxPoint x="540" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m9" value="9: summarize result" style="html=1;verticalAlign=bottom;endArrow=block;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="460" as="sourcePoint" />
+            <mxPoint x="680" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m10" value="10: Arabic reply" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="680" y="490" as="sourcePoint" />
+            <mxPoint x="540" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m11" value="11: JSON response" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="530" as="sourcePoint" />
+            <mxPoint x="260" y="530" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m12" value="12: POST /voice/tts" style="html=1;verticalAlign=bottom;endArrow=block;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="570" as="sourcePoint" />
+            <mxPoint x="540" y="570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m13" value="13: عرض + تشغيل صوت" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;strokeWidth=1;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="620" as="sourcePoint" />
+            <mxPoint x="120" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="usecase" name="5. حالات الاستخدام">
+    <mxGraphModel dx="864" dy="609" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="utitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#1565C0;" value="مخطط حالات الاستخدام (Use Case Diagram)" vertex="1">
+          <mxGeometry height="40" width="600" x="400" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="sysbox" parent="1" style="swimlane;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;fontStyle=1;" value="نظام مساعد المحاسبة الذكي" vertex="1">
+          <mxGeometry height="520" width="900" x="200" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc1" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="تسجيل الدخول" vertex="1">
+          <mxGeometry height="60" width="140" x="60" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uc2" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" value="إرسال أمر صوتي" vertex="1">
+          <mxGeometry height="60" width="140" x="240" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uc3" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" value="إرسال أمر نصي" vertex="1">
+          <mxGeometry height="60" width="140" x="420" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uc4" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="البحث في الفواتير" vertex="1">
+          <mxGeometry height="60" width="150" x="60" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="uc5" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="البحث في العملاء" vertex="1">
+          <mxGeometry height="60" width="150" x="240" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="uc6" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="عرض ملخص المحاسبة" vertex="1">
+          <mxGeometry height="60" width="160" x="420" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="uc7" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="إنشاء تقرير" vertex="1">
+          <mxGeometry height="60" width="140" x="620" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="uc8" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="إضافة عميل" vertex="1">
+          <mxGeometry height="60" width="140" x="700" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="uc9" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" value="قراءة الرد صوتياً" vertex="1">
+          <mxGeometry height="60" width="150" x="70" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="uc10" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" value="إدارة الصلاحيات (RBAC)" vertex="1">
+          <mxGeometry height="60" width="170" x="670" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc11" parent="sysbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" value="سجل العمليات (Audit)" vertex="1">
+          <mxGeometry height="60" width="160" x="420" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="inc1" edge="1" parent="sysbox" source="uc2" style="endArrow=open;dashed=1;strokeWidth=1;fontSize=10;" target="uc4" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="inc2" edge="1" parent="sysbox" source="uc3" style="endArrow=open;dashed=1;strokeWidth=1;fontSize=10;" target="uc4" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_user" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="مستخدم&#xa;(ذو إعاقة حركية)" vertex="1">
+          <mxGeometry height="90" width="50" x="60" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_admin" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="مدير النظام" vertex="1">
+          <mxGeometry height="90" width="50" x="1180" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="ua1" edge="1" parent="1" source="actor_user" style="endArrow=none;html=1;strokeWidth=1;" target="uc1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ua2" edge="1" parent="1" source="actor_user" style="endArrow=none;html=1;strokeWidth=1;" target="uc2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ua3" edge="1" parent="1" source="actor_user" style="endArrow=none;html=1;strokeWidth=1;" target="uc3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ua4" edge="1" parent="1" source="actor_user" style="endArrow=none;html=1;strokeWidth=1;" target="uc4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ua5" edge="1" parent="1" source="actor_user" style="endArrow=none;html=1;strokeWidth=1;" target="uc9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aa1" edge="1" parent="1" source="actor_admin" style="endArrow=none;html=1;strokeWidth=1;" target="uc10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aa2" edge="1" parent="1" source="actor_admin" style="endArrow=none;html=1;strokeWidth=1;" target="uc8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="deploy" name="6. مخطط النشر">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="dtitle" value="مخطط النشر (Deployment Diagram)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="450" y="20" width="500" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dclient" value="جهاز المستخدم&#xa;(Windows / Android / iOS)" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="100" width="280" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="dflutter" value="Flutter App&#xa;Port: Client" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="dclient">
+          <mxGeometry x="40" y="50" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dserver" value="خادم محلي / Development Server" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="440" y="80" width="520" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="dnest" value="NestJS Backend&#xa;:3000/api" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="dserver">
+          <mxGeometry x="40" y="50" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dpython" value="Python FastAPI&#xa;(Whisper + TTS) :8000" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="dserver">
+          <mxGeometry x="240" y="50" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dollama" value="Ollama Server&#xa;Qwen 2.5 :11434" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="dserver">
+          <mxGeometry x="40" y="150" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ddb" value="PostgreSQL 18&#xa;:5432 / ai_accessibility" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="dserver">
+          <mxGeometry x="260" y="140" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dwhisper" value="Whisper Model (base)&#xa;~/ai-service/models/" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="dserver">
+          <mxGeometry x="40" y="260" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dqwen" value="Qwen Model (~4.7 GB)&#xa;Ollama models cache" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="dserver">
+          <mxGeometry x="280" y="260" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="de1" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="1" source="dclient" target="dserver">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de1l" value="HTTP / REST" style="edgeLabel;fontSize=10;" vertex="1" connectable="0" parent="de1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dnote" value="ملاحظة: في بيئة الإنتاج يمكن نشر كل خدمة في Docker Container منفصل&#xa;باستخدام docker-compose.yml الموجود في المشروع" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#fbc02d;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="540" width="880" height="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

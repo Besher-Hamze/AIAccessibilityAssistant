@@ -1,0 +1,133 @@
+<mxfile host="app.diagrams.net" modified="2026-07-31T14:30:00.000Z" agent="Cursor" version="24.7.17" type="device">
+  <diagram id="overall" name="Overall Architecture">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>        <mxCell id="title" value="AI Accessibility Assistant - Overall Architecture&#xa;مساعد المحاسبة الذكي الصوتي — نظام محاسبة + Function Calling + Schema Context" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="1200" height="60" as="geometry"/>
+        </mxCell>        <mxCell id="initBox" value="Initialization Phase (Runs Once at Startup)" style="swimlane;startSize=32;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;fontStyle=1;horizontal=0;direction=east;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="1720" height="200" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="i1" value="Read Prisma Schema&#xa;&amp; Tool Definitions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=center;" vertex="1" parent="initBox">
+          <mxGeometry x="30" y="60" width="160" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="i2" value="Schema Context&#xa;(RAG-like Injection)&#xa;&#xa;Tables: Customers&#xa;Products, Invoices&#xa;Relationships + Fields" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="initBox">
+          <mxGeometry x="240" y="50" width="180" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="i3" value="AI Tools Registry&#xa;(Function Calling)&#xa;&#xa;search_invoices&#xa;get_customer_invoices&#xa;generate_report&#xa;list_products ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="initBox">
+          <mxGeometry x="480" y="50" width="180" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="i4" value="System Prompt&#xa;Template&#xa;&#xa;Arabic instructions&#xa;+ Schema Context&#xa;+ Business rules" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="initBox">
+          <mxGeometry x="720" y="50" width="170" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="i5" value="Seed Accounting Data&#xa;(prisma seed)&#xa;&#xa;Customers&#xa;Products&#xa;Invoices" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="initBox">
+          <mxGeometry x="960" y="50" width="150" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="i6" value="Load Whisper Model&#xa;faster-whisper&#xa;base (Arabic STT)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=center;" vertex="1" parent="initBox">
+          <mxGeometry x="1160" y="55" width="150" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="i7" value="Pull Ollama Model&#xa;qwen2.5:7b&#xa;(LLM + Tools)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=center;" vertex="1" parent="initBox">
+          <mxGeometry x="1360" y="55" width="150" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ie1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;" edge="1" parent="initBox" source="i1" target="i2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ie1l" value="Schema" style="edgeLabel;fontSize=10;" vertex="1" connectable="0" parent="ie1"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+        <mxCell id="ie2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;" edge="1" parent="initBox" source="i2" target="i4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ie3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;" edge="1" parent="initBox" source="i3" target="i4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ie3l" value="Tools" style="edgeLabel;fontSize=10;" vertex="1" connectable="0" parent="ie3"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+        <mxCell id="ie4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;" edge="1" parent="initBox" source="i5" target="i4"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1035" y="40"/><mxPoint x="805" y="40"/></Array></mxGeometry></mxCell>        <mxCell id="db" value="PostgreSQL&#xa;Relational Database&#xa;ai_accessibility&#xa;:5432&#xa;&#xa;Stores: Users, Customers&#xa;Products, Invoices&#xa;ChatHistory, AuditLog" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=20;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=center;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="330" width="280" height="130" as="geometry"/>
+        </mxCell>        <mxCell id="store1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#82b366;" edge="1" parent="1" source="i5" target="db">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1070" y="310"/><mxPoint x="900" y="310"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="store1l" value="Store" style="edgeLabel;fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="store1"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>        <mxCell id="queryBox" value="Query Phase (Runs on Every User Request)" style="swimlane;startSize=32;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;fontStyle=1;horizontal=0;direction=east;" vertex="1" parent="1">
+          <mxGeometry x="40" y="500" width="1720" height="520" as="geometry"/>
+        </mxCell>        <mxCell id="q1" value="Flutter App&#xa;&#xa;User speaks or&#xa;types a command&#xa;(Arabic)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=center;fontStyle=1;" vertex="1" parent="queryBox">
+          <mxGeometry x="30" y="60" width="140" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="q2" value="NestJS Backend&#xa;:3000/api&#xa;&#xa;POST /voice/speech-to-text&#xa;POST /ai/chat&#xa;JWT Auth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="queryBox">
+          <mxGeometry x="220" y="55" width="170" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="q3" value="Whisper STT&#xa;(Python FastAPI :8000)&#xa;&#xa;Audio → Arabic Text&#xa;Optional if voice input" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;spacingLeft=8;dashed=1;" vertex="1" parent="queryBox">
+          <mxGeometry x="220" y="190" width="170" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="q4" value="AI Agent&#xa;(NestJS)&#xa;&#xa;Builds message history&#xa;Sends to Ollama&#xa;Parses tool calls" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="queryBox">
+          <mxGeometry x="440" y="55" width="160" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="q5" value="Ollama Server&#xa;:11434&#xa;&#xa;Model: qwen2.5:7b&#xa;Understands Arabic&#xa;Selects Function (Tool)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;spacingLeft=8;fontStyle=0;" vertex="1" parent="queryBox">
+          <mxGeometry x="650" y="55" width="170" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="q6" value="Function Calling&#xa;&#xa;Example:&#xa;get_customer_invoices(&#xa;  customerName: &quot;محمد&quot;,&#xa;  fromDate: last month&#xa;)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="queryBox">
+          <mxGeometry x="870" y="50" width="190" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="q7" value="Execute Tool&#xa;(AiToolsService)&#xa;&#xa;Prisma queries&#xa;on PostgreSQL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="queryBox">
+          <mxGeometry x="1110" y="55" width="160" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="q8" value="Query Results&#xa;&#xa;Invoice rows&#xa;Customer data&#xa;Summary stats" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="queryBox">
+          <mxGeometry x="1320" y="55" width="150" height="100" as="geometry"/>
+        </mxCell>        <mxCell id="q9" value="Prompt Builder&#xa;&#xa;Combine:&#xa;1) User question&#xa;2) Tool name + args&#xa;3) Database results&#xa;4) Arabic summary rules" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="queryBox">
+          <mxGeometry x="650" y="220" width="190" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="q10" value="Ollama Server&#xa;&#xa;Generates natural&#xa;Arabic response&#xa;suitable for TTS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="queryBox">
+          <mxGeometry x="440" y="220" width="160" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="q11" value="Edge TTS&#xa;(Python :8000)&#xa;&#xa;Text → Arabic Speech&#xa;ar-SA-HamedNeural" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;spacingLeft=8;dashed=1;" vertex="1" parent="queryBox">
+          <mxGeometry x="220" y="320" width="170" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="q12" value="Flutter App&#xa;&#xa;Displays text response&#xa;+ plays audio&#xa;to user" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=center;fontStyle=1;" vertex="1" parent="queryBox">
+          <mxGeometry x="30" y="300" width="140" height="90" as="geometry"/>
+        </mxCell>        <mxCell id="ctx" value="Schema Context&#xa;(from Init Phase)&#xa;injected into&#xa;every LLM call" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#fbc02d;fontSize=10;align=center;dashed=1;" vertex="1" parent="queryBox">
+          <mxGeometry x="870" y="220" width="130" height="80" as="geometry"/>
+        </mxCell>        <mxCell id="qe1" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="queryBox" source="q1" target="q2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="qe1l" value="HTTP POST&#xa;Bearer JWT" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe1"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe2" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;dashed=1;strokeColor=#6c8ebf;" edge="1" parent="queryBox" source="q1" target="q3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="qe2l" value="Audio file&#xa;(if voice)" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe2"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe3" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;dashed=1;strokeColor=#6c8ebf;" edge="1" parent="queryBox" source="q3" target="q2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="qe3l" value="Arabic text" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe3"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe4" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="queryBox" source="q2" target="q4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="qe4l" value="User message" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe4"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe5" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="queryBox" source="q4" target="q5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="qe5l" value="Chat + Tools&#xa;+ Schema Context" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe5"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe6" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="queryBox" source="q5" target="q6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="qe6l" value="tool_call" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe6"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe7" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="queryBox" source="q6" target="q7"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="qe8" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="queryBox" source="q7" target="q8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="qe8l" value="Rows" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe8"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>        <mxCell id="qdb" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#b85450;dashed=1;" edge="1" parent="1" source="q7" target="db">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1230" y="480"/><mxPoint x="900" y="480"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="qdbl" value="Prisma ORM&#xa;SQL Queries" style="edgeLabel;fontSize=10;fontStyle=1;" vertex="1" connectable="0" parent="qdb"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>        <mxCell id="qctx" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=1;strokeColor=#fbc02d;dashed=1;" edge="1" parent="queryBox" source="ctx" target="q5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>        <mxCell id="qe9" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="queryBox" source="q8" target="q9"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1395" y="200"/><mxPoint x="745" y="200"/></Array></mxGeometry></mxCell>
+        <mxCell id="qe9l" value="Results" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe9"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe10" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="queryBox" source="q9" target="q10"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="qe10l" value="Full Prompt" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe10"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe11" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="queryBox" source="q10" target="q2"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="520" y="380"/><mxPoint x="305" y="380"/></Array></mxGeometry></mxCell>
+        <mxCell id="qe11l" value="Arabic reply" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe11"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe12" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;dashed=1;strokeColor=#6c8ebf;" edge="1" parent="queryBox" source="q2" target="q11"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="qe12l" value="POST /tts" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe12"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe13" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;" edge="1" parent="queryBox" source="q2" target="q12"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="100" y="180"/><mxPoint x="100" y="300"/></Array></mxGeometry></mxCell>
+        <mxCell id="qe13l" value="JSON Response&#xa;{ reply, toolUsed }" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe13"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <mxCell id="qe14" style="edgeStyle=orthogonalEdgeStyle;strokeWidth=2;dashed=1;strokeColor=#6c8ebf;" edge="1" parent="queryBox" source="q11" target="q12"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="qe14l" value="MP3 audio" style="edgeLabel;fontSize=9;" vertex="1" connectable="0" parent="qe14"><mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>        <mxCell id="example" value="Example: User says &quot;أريد فواتير العميل محمد في الشهر الماضي&quot;&#xa;→ STT → get_customer_invoices → PostgreSQL → &quot;يوجد فاتورتان للعميل محمد...&quot; → TTS → User hears response" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#4caf50;fontSize=11;align=left;spacingLeft=12;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="1720" height="45" as="geometry"/>
+        </mxCell>        <mxCell id="leg" value="Tech Stack: Flutter | NestJS | PostgreSQL + Prisma | Ollama (Qwen2.5) | faster-whisper | edge-tts | JWT + RBAC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="980" width="1720" height="40" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

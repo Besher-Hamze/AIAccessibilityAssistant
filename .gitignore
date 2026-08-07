@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+build/
+*.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# AI models cache
+ai-service/models/
+ai-service/audio_cache/
+
+# Flutter
+mobile/.dart_tool/
+mobile/build/
+mobile/.packages
+
+# Prisma
+backend/prisma/migrations/**/migration_lock.toml
+
+# Test coverage
+coverage/

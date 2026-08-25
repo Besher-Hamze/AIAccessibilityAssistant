@@ -4,6 +4,9 @@ class ChatMessage {
   final String content;
   final DateTime createdAt;
   final bool isLoading;
+  final String? speakerGender;
+  final String? speakerGenderAr;
+  final double? confidence;
 
   ChatMessage({
     required this.id,
@@ -11,6 +14,9 @@ class ChatMessage {
     required this.content,
     required this.createdAt,
     this.isLoading = false,
+    this.speakerGender,
+    this.speakerGenderAr,
+    this.confidence,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
@@ -32,6 +38,9 @@ class ChatMessage {
       content: content ?? this.content,
       createdAt: createdAt,
       isLoading: isLoading ?? this.isLoading,
+      speakerGender: speakerGender,
+      speakerGenderAr: speakerGenderAr,
+      confidence: confidence,
     );
   }
 

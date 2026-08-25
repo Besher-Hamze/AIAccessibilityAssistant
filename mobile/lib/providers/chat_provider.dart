@@ -29,6 +29,8 @@ class ChatProvider extends ChangeNotifier {
   bool _ttsReady = false;
   String? _error;
 
+  String? _lastGender;
+
   ChatProvider(this._api) {
     _initTts();
     _restoreSelectedModel();
@@ -174,7 +176,12 @@ class ChatProvider extends ChangeNotifier {
   }
 
   /// Returns true when a write tool was executed (so UI can refresh data).
-  Future<bool> sendTextMessage(String text) async {
+  Future<bool> sendTextMessage(
+    String text, {
+    String? speakerGender,
+    String? speakerGenderAr,
+    double? confidence,
+  }) async {
     if (text.trim().isEmpty || _isProcessing) return false;
 
     final userMsg = ChatMessage(
@@ -182,6 +189,9 @@ class ChatProvider extends ChangeNotifier {
       role: 'user',
       content: text.trim(),
       createdAt: DateTime.now(),
+      speakerGender: speakerGender,
+      speakerGenderAr: speakerGenderAr,
+      confidence: confidence,
     );
 
     final loadingMsg = ChatMessage(
@@ -276,15 +286,22 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final text = await _api.speechToText(File(path));
-      if (text.trim().isEmpty) {
-        _error = 'لم يتم التعرف على الكلام. حاول مرة أخرى.';
+      final stt = await _api.speechToText(File(path));
+      final text = (stt['text'] as String? ?? '').trim();
+      if (text.isEmpty) {
+        _error = 'لم يتم التعرف على الكلام. حاول مرة أخرى في مكان أكثر هدوءاً.';
         _isProcessing = false;
         notifyListeners();
         return;
       }
+      _lastGender = stt['gender']?.toString();
       _isProcessing = false;
-      await sendTextMessage(text);
+      await sendTextMessage(
+        text,
+        speakerGender: stt['gender']?.toString(),
+        speakerGenderAr: stt['gender_ar']?.toString(),
+        confidence: (stt['confidence'] as num?)?.toDouble(),
+      );
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
       _isProcessing = false;
@@ -305,6 +322,8 @@ class ChatProvider extends ChangeNotifier {
 
     try {
       await stopSpeaking();
+      final female = _lastGender == 'female';
+      await _tts.setPitch(female ? 1.18 : 0.95);
       _speakingText = original;
       _isSpeaking = true;
       notifyListeners();

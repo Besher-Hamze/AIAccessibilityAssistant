@@ -22,7 +22,7 @@ if not exist ".env" (
 
 echo.
 echo Downloading Whisper model on first run...
-python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8', download_root='models')"
+python -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8', download_root='models')"
 
 echo.
 echo ========================================

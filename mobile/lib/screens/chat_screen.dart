@@ -216,8 +216,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         const SizedBox(height: 8),
                         Text(
                           a11y.tapToTalk
-                              ? 'اضغط الميكروفون للتحدث، ثم اضغط مرة أخرى للإرسال'
-                              : 'اضغط مطولاً على الميكروفون للتحدث',
+                              ? 'اضغط الميكروفون للتحدث ثم اضغط مرة أخرى للإرسال.\nيمكنك بالصوت: إضافة عميل، إنشاء فاتورة، عرض المنتجات، والملخص.'
+                              : 'اضغط مطولاً على الميكروفون للتحدث.\nيمكنك بالصوت: إضافة عميل، إنشاء فاتورة، عرض المنتجات، والملخص.',
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: AppColors.muted, height: 1.5),
                         ),

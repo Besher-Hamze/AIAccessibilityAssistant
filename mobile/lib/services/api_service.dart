@@ -96,7 +96,7 @@ class ApiService {
     return jsonDecode(response.body) as List<dynamic>;
   }
 
-  Future<String> speechToText(File audioFile) async {
+  Future<Map<String, dynamic>> speechToText(File audioFile) async {
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('${ApiConfig.baseUrl}/voice/speech-to-text'),
@@ -109,8 +109,7 @@ class ApiService {
     );
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
-    final body = _decode(response) as Map<String, dynamic>;
-    return body['text'] as String? ?? '';
+    return _decode(response) as Map<String, dynamic>;
   }
 
   Future<List<int>> textToSpeech(String text) async {

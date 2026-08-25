@@ -1,4 +1,6 @@
-"""AI Voice Service - Whisper STT + Edge TTS for Arabic."""
+"""AI Voice Service: denoise + LSTM gender + Whisper STT + Edge TTS."""
+
+from __future__ import annotations
 
 import io
 import os
@@ -14,15 +16,19 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
+from audio.gender_rnn import GenderClassifier
+from audio.pipeline import VoicePipeline
+
 MODELS_DIR = Path(__file__).parent / "models"
 MODELS_DIR.mkdir(exist_ok=True)
 
 
 class Settings(BaseSettings):
-    whisper_model: str = "base"
+    whisper_model: str = "medium"
     whisper_device: str = "cpu"
     whisper_compute_type: str = "int8"
     tts_voice: str = "ar-SA-HamedNeural"
+    tts_voice_female: str = "ar-SA-ZariyahNeural"
     host: str = "0.0.0.0"
     port: int = 8000
 
@@ -33,6 +39,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 whisper_model = None
+pipeline: VoicePipeline | None = None
 
 
 def load_whisper():
@@ -55,6 +62,9 @@ def load_whisper():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global pipeline
+    pipeline = VoicePipeline(GenderClassifier())
+    print("Gender LSTM ready.")
     try:
         load_whisper()
     except Exception as exc:
@@ -64,8 +74,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AI Accessibility Voice Service",
-    description="Speech-to-Text (Whisper) and Text-to-Speech (Edge TTS) for Arabic",
-    version="1.0.0",
+    description="Denoise + LSTM gender + Whisper STT + Edge TTS",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -80,6 +90,7 @@ app.add_middleware(
 class TtsRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=5000)
     voice: str | None = None
+    gender: str | None = None
 
 
 @app.get("/health")
@@ -89,6 +100,8 @@ async def health():
         "whisper_model": settings.whisper_model,
         "tts_voice": settings.tts_voice,
         "whisper_loaded": whisper_model is not None,
+        "denoise": "spectral_gating",
+        "gender_model": "tiny_lstm",
     }
 
 
@@ -99,50 +112,68 @@ async def speech_to_text(file: UploadFile = File(...)):
 
     suffix = Path(file.filename).suffix or ".wav"
     content = await file.read()
-
     if len(content) == 0:
         raise HTTPException(status_code=400, detail="Empty audio file")
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(content)
-        tmp_path = tmp.name
-
+    tmp_path = None
+    clean_path = None
     try:
-        model = load_whisper()
-        segments, info = model.transcribe(
-            tmp_path,
-            language="ar",
-            beam_size=5,
-            vad_filter=True,
-        )
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
 
-        text = " ".join(segment.text.strip() for segment in segments).strip()
+        model = load_whisper()
+        assert pipeline is not None
+
+        try:
+            audio_path, gender = pipeline.prepare(tmp_path)
+            clean_path = audio_path
+        except Exception:
+            audio_path = tmp_path
+            gender = {
+                "gender": "unknown",
+                "gender_ar": "غير محدد",
+                "confidence": 0.0,
+                "mean_pitch_hz": None,
+            }
+
+        text, confidence, raw = pipeline.transcribe(model, audio_path)
 
         return {
             "text": text,
-            "language": info.language,
-            "language_probability": round(info.language_probability, 3),
+            "raw_text": raw,
+            "confidence": confidence,
+            "language": "ar",
+            "denoised": clean_path is not None,
+            **gender,
         }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     finally:
-        os.unlink(tmp_path)
+        for p in (tmp_path, clean_path):
+            if p and os.path.exists(p):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
 
 
 @app.post("/tts")
 async def text_to_speech(request: TtsRequest):
-    voice = request.voice or settings.tts_voice
+    voice = request.voice
+    if not voice:
+        if (request.gender or "").lower() == "female":
+            voice = settings.tts_voice_female
+        else:
+            voice = settings.tts_voice
 
     try:
         communicate = edge_tts.Communicate(request.text, voice)
         audio_buffer = io.BytesIO()
-
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
                 audio_buffer.write(chunk["data"])
-
         audio_buffer.seek(0)
-
         return StreamingResponse(
             audio_buffer,
             media_type="audio/mpeg",

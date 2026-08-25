@@ -58,7 +58,7 @@ export class OllamaService {
       messages: [{ role: 'system', content: systemPrompt }, ...messages],
       tools: AI_TOOLS,
       stream: false,
-      options: { temperature: 0.2 },
+      options: { temperature: 0.1 },
     };
 
     try {
@@ -104,7 +104,7 @@ ${toolDesc}
         messages: [{ role: 'system', content: jsonPrompt }, ...messages],
         stream: false,
         format: 'json',
-        options: { temperature: 0.2 },
+        options: { temperature: 0.1 },
       },
       { timeout: 180000 },
     );

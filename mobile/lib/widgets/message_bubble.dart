@@ -62,13 +62,29 @@ class MessageBubble extends StatelessWidget {
                         ),
                       ],
                     )
-                  : Text(
-                      message.content,
-                      style: TextStyle(
-                        fontSize: 15,
-                        height: 1.45,
-                        color: isUser ? Colors.white : AppColors.ink,
-                      ),
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          message.content,
+                          style: TextStyle(
+                            fontSize: 15,
+                            height: 1.45,
+                            color: isUser ? Colors.white : AppColors.ink,
+                          ),
+                        ),
+                        if (isUser && message.speakerGenderAr != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'صوت ${message.speakerGenderAr}${message.confidence != null ? ' · ثقة ${(message.confidence! * 100).round()}٪' : ''}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
             ),
             if (!isUser && !message.isLoading)

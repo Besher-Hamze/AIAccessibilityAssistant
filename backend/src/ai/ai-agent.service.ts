@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { OllamaService } from './ollama.service';
 import { AiToolsService } from './ai-tools.service';
+import { formatToolReply, matchIntent } from './intent-router';
 
 export interface ChatResult {
   reply: string;
@@ -47,6 +48,39 @@ export class AiAgentService {
       }));
 
     messages.push({ role: 'user', content: message });
+
+    const direct = matchIntent(message);
+    if (direct) {
+      try {
+        this.logger.log(`Direct intent: ${direct.tool}`);
+        const toolResult = await this.tools.execute(
+          direct.tool,
+          direct.args,
+          userRole,
+        );
+        await this.tools.logAudit(userId, direct.tool, 'voice_intent', undefined, {
+          args: direct.args,
+        });
+        const reply = formatToolReply(direct.tool, toolResult, direct.args);
+        await this.prisma.chatMessage.create({
+          data: {
+            userId,
+            role: 'assistant',
+            content: reply,
+            metadata: JSON.parse(
+              JSON.stringify({
+                toolUsed: direct.tool,
+                toolResult,
+                intent: 'direct',
+              }),
+            ),
+          },
+        });
+        return { reply, toolUsed: direct.tool, toolResult, speak };
+      } catch (err) {
+        this.logger.warn(`Direct intent failed, falling back to LLM: ${err}`);
+      }
+    }
 
     const response = await this.ollama.chat(messages, model);
 

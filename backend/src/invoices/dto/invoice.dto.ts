@@ -1,9 +1,11 @@
 import {
   IsArray,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
-  IsUUID,
+  Min,
+  MinLength,
   ValidateNested,
   ArrayMinSize,
 } from 'class-validator';
@@ -11,15 +13,19 @@ import { Type } from 'class-transformer';
 import { InvoiceStatus } from '@prisma/client';
 
 export class InvoiceItemDto {
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   productId: string;
 
   @Type(() => Number)
+  @IsInt()
+  @Min(1)
   quantity: number;
 }
 
 export class CreateInvoiceDto {
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   customerId: string;
 
   @IsArray()

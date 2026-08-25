@@ -24,7 +24,7 @@ MODELS_DIR.mkdir(exist_ok=True)
 
 
 class Settings(BaseSettings):
-    whisper_model: str = "medium"
+    whisper_model: str = "small"
     whisper_device: str = "cpu"
     whisper_compute_type: str = "int8"
     tts_voice: str = "ar-SA-HamedNeural"

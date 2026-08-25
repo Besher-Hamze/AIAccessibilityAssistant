@@ -3,7 +3,11 @@ import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { OllamaService } from './ollama.service';
 import { AiToolsService } from './ai-tools.service';
-import { formatToolReply, matchIntent } from './intent-router';
+import {
+  formatToolReply,
+  matchIntent,
+  matchLooseListIntent,
+} from './intent-router';
 
 export interface ChatResult {
   reply: string;
@@ -103,12 +107,16 @@ export class AiAgentService {
           : 'object',
       });
 
-      const reply = await this.ollama.generateFinalReply(
-        message,
-        toolName,
-        toolResult,
-        model,
-      );
+      const formatted = formatToolReply(toolName, toolResult, args);
+      const reply =
+        formatted !== 'تم تنفيذ الطلب.'
+          ? formatted
+          : await this.ollama.generateFinalReply(
+              message,
+              toolName,
+              toolResult,
+              model,
+            );
 
       await this.prisma.chatMessage.create({
         data: {
@@ -122,6 +130,40 @@ export class AiAgentService {
       });
 
       return { reply, toolUsed: toolName, toolResult, speak };
+    }
+
+    const loose = matchLooseListIntent(message);
+    if (loose) {
+      try {
+        this.logger.log(`Loose intent after LLM: ${loose.tool}`);
+        const toolResult = await this.tools.execute(
+          loose.tool,
+          loose.args,
+          userRole,
+        );
+        await this.tools.logAudit(userId, loose.tool, 'voice_intent', undefined, {
+          args: loose.args,
+          fallback: 'loose',
+        });
+        const reply = formatToolReply(loose.tool, toolResult, loose.args);
+        await this.prisma.chatMessage.create({
+          data: {
+            userId,
+            role: 'assistant',
+            content: reply,
+            metadata: JSON.parse(
+              JSON.stringify({
+                toolUsed: loose.tool,
+                toolResult,
+                intent: 'loose',
+              }),
+            ),
+          },
+        });
+        return { reply, toolUsed: loose.tool, toolResult, speak };
+      } catch (err) {
+        this.logger.warn(`Loose intent failed: ${err}`);
+      }
     }
 
     const reply =

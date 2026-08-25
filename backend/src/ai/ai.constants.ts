@@ -14,18 +14,39 @@ InvoiceItems (بنود الفاتورة):
 - invoiceId, productId, quantity, unitPrice, subtotal
 `;
 
-export const AI_TOOLS = [
+export type AiToolDef = {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+};
+
+export const AI_TOOLS: AiToolDef[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'list_customers',
+      description:
+        'عرض كل العملاء أو أسمائهم. استخدمها لأوامر مثل: أعطني أسماء العملاء، اعرض العملاء، قائمة العملاء، شو العملاء، جيب العملاء.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
   {
     type: 'function',
     function: {
       name: 'search_customers',
-      description: 'البحث عن العملاء بالاسم أو الهاتف أو البريد',
+      description:
+        'البحث عن عميل بالاسم أو الهاتف. إذا لم يُذكر اسم محدد استخدم list_customers.',
       parameters: {
         type: 'object',
         properties: {
-          query: { type: 'string', description: 'نص البحث' },
+          query: {
+            type: 'string',
+            description: 'اسم أو جزء من الاسم. اتركه فارغاً لعرض الكل',
+          },
         },
-        required: ['query'],
       },
     },
   },
@@ -33,7 +54,7 @@ export const AI_TOOLS = [
     type: 'function',
     function: {
       name: 'create_customer',
-      description: 'إضافة عميل جديد',
+      description: 'إضافة عميل جديد. مثال: أضف عميل اسمه سارة ورقمها 0944',
       parameters: {
         type: 'object',
         properties: {
@@ -68,11 +89,12 @@ export const AI_TOOLS = [
     type: 'function',
     function: {
       name: 'list_products',
-      description: 'عرض قائمة المنتجات والمخزون والأسعار',
+      description:
+        'عرض المنتجات والأسعار والمخزون. مثال: اعرض المنتجات، أعطني أسماء المنتجات.',
       parameters: {
         type: 'object',
         properties: {
-          search: { type: 'string', description: 'بحث بالاسم' },
+          search: { type: 'string', description: 'بحث بالاسم اختياري' },
         },
       },
     },
@@ -98,13 +120,13 @@ export const AI_TOOLS = [
     type: 'function',
     function: {
       name: 'update_product_stock',
-      description: 'تحديث مخزون منتج بالاسم',
+      description: 'تحديث مخزون أو سعر منتج بالاسم',
       parameters: {
         type: 'object',
         properties: {
           productName: { type: 'string' },
-          stock: { type: 'number', description: 'الكمية الجديدة للمخزون' },
-          price: { type: 'number', description: 'سعر جديد اختياري' },
+          stock: { type: 'number' },
+          price: { type: 'number' },
         },
         required: ['productName'],
       },
@@ -114,19 +136,13 @@ export const AI_TOOLS = [
     type: 'function',
     function: {
       name: 'get_customer_invoices',
-      description: 'جلب فواتير عميل معين',
+      description: 'فواتير عميل معيّن. مثال: اعرض فواتير محمد الأحمد',
       parameters: {
         type: 'object',
         properties: {
-          customerName: { type: 'string', description: 'اسم العميل' },
-          fromDate: {
-            type: 'string',
-            description: 'تاريخ البداية ISO مثل 2026-01-01',
-          },
-          toDate: {
-            type: 'string',
-            description: 'تاريخ النهاية ISO مثل 2026-01-31',
-          },
+          customerName: { type: 'string' },
+          fromDate: { type: 'string' },
+          toDate: { type: 'string' },
           status: {
             type: 'string',
             enum: ['DRAFT', 'PAID', 'PENDING', 'CANCELLED'],
@@ -140,14 +156,11 @@ export const AI_TOOLS = [
     type: 'function',
     function: {
       name: 'get_latest_invoice',
-      description: 'جلب آخر فاتورة لعميل أو آخر فاتورة في النظام',
+      description: 'آخر فاتورة في النظام أو لعميل',
       parameters: {
         type: 'object',
         properties: {
-          customerName: {
-            type: 'string',
-            description: 'اسم العميل (اختياري)',
-          },
+          customerName: { type: 'string' },
         },
       },
     },
@@ -156,7 +169,8 @@ export const AI_TOOLS = [
     type: 'function',
     function: {
       name: 'search_invoices',
-      description: 'البحث في الفواتير حسب العميل أو الحالة أو الفترة',
+      description:
+        'عرض أو تصفية الفواتير. مثال: أعطني الفواتير، الفواتير المعلقة، فواتير الشهر الماضي.',
       parameters: {
         type: 'object',
         properties: {
@@ -176,7 +190,7 @@ export const AI_TOOLS = [
     function: {
       name: 'create_invoice',
       description:
-        'إنشاء فاتورة جديدة لعميل بمنتجات وكميات. استخدم أسماء العملاء والمنتجات.',
+        'إنشاء فاتورة لعميل بمنتجات وكميات. مثال: أنشئ فاتورة لمحمد بمنتج برنامج محاسبة',
       parameters: {
         type: 'object',
         properties: {
@@ -206,7 +220,7 @@ export const AI_TOOLS = [
     type: 'function',
     function: {
       name: 'update_invoice_status',
-      description: 'تغيير حالة فاتورة برقمها (مثل INV-00001)',
+      description: 'تغيير حالة فاتورة برقمها مثل INV-SEED-002',
       parameters: {
         type: 'object',
         properties: {
@@ -224,7 +238,7 @@ export const AI_TOOLS = [
     type: 'function',
     function: {
       name: 'get_accounting_summary',
-      description: 'ملخص المحاسبة: إجمالي الفواتير، المدفوعة، المعلقة',
+      description: 'ملخص المحاسبة: عدد الفواتير والعملاء والمبالغ',
       parameters: {
         type: 'object',
         properties: {
@@ -254,23 +268,3 @@ export const AI_TOOLS = [
     },
   },
 ];
-
-export const SYSTEM_PROMPT = `أنت مساعد محاسبة ذكي باللغة العربية لمساعدة الأشخاص ذوي الإعاقة الحركية.
-مهمتك فهم أوامر المستخدم (صوتية أو نصية) وتنفيذ العمليات على نظام المحاسبة.
-
-${DATABASE_SCHEMA}
-
-قواعد مهمة:
-1. استخدم الأدوات (functions) المتاحة لتنفيذ الطلبات — لا تخترع بيانات.
-2. إذا كان الطلب غامضاً، اطلب توضيحاً بلطف.
-3. أجب دائماً بالعربية الفصحى المبسطة.
-4. عند عرض النتائج، لخّصها بشكل واضح ومناسب للقراءة الصوتية.
-5. التواريخ: "الشهر الماضي" = الشهر السابق من تاريخ اليوم.
-6. إذا لم يحدد المستخدم فترة زمنية، نفّذ العملية على كل البيانات بدون طلب توضيح.
-7. لا تنفّذ عمليات حذف — غير متاحة للمساعد. استخدم CANCELLED لإلغاء فاتورة.
-8. لإنشاء فاتورة استخدم أسماء العملاء والمنتجات الموجودة أو أنشئها أولاً.
-9. أوامر شائعة يجب تنفيذها فوراً بأداة: أضف عميل، أنشئ فاتورة، اعرض المنتجات، ملخص المحاسبة، تقرير، فواتير عميل، غيّر حالة فاتورة.
-10. العملة ليرة سورية. لا تخترع أرقاماً.
-
-تاريخ اليوم: {{TODAY}}
-`;

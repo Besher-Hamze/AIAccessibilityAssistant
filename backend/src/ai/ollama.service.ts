@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { AI_TOOLS, SYSTEM_PROMPT } from './ai.constants';
+import { AI_TOOLS } from './ai.constants';
+import {
+  buildFinalReplyPrompt,
+  buildJsonFallbackPrompt,
+  buildSystemPrompt,
+} from './prompt-builder';
 
 interface OllamaMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -48,10 +53,8 @@ export class OllamaService {
 
   async chat(messages: OllamaMessage[], model?: string) {
     const selectedModel = this.resolveModel(model);
-    const systemPrompt = SYSTEM_PROMPT.replace(
-      '{{TODAY}}',
-      new Date().toISOString().split('T')[0],
-    );
+    const today = new Date().toISOString().split('T')[0];
+    const systemPrompt = buildSystemPrompt(today);
 
     const payload = {
       model: selectedModel,
@@ -72,30 +75,17 @@ export class OllamaService {
       this.logger.warn(
         `Ollama tools API failed for ${selectedModel}, trying JSON mode`,
       );
-      return this.chatJsonFallback(messages, systemPrompt, selectedModel);
+      return this.chatJsonFallback(messages, selectedModel);
     }
   }
 
   private async chatJsonFallback(
     messages: OllamaMessage[],
-    systemPrompt: string,
     selectedModel: string,
   ) {
-    const toolDesc = AI_TOOLS.map(
-      (t) => `- ${t.function.name}: ${t.function.description}`,
-    ).join('\n');
-
-    const jsonPrompt = `${systemPrompt}
-
-الأدوات المتاحة:
-${toolDesc}
-
-إذا احتجت تنفيذ عملية، أجب بـ JSON فقط بهذا الشكل:
-{"tool": "اسم_الأداة", "arguments": {...}}
-
-إذا كان رداً عادياً بدون عملية:
-{"tool": null, "reply": "ردك بالعربية"}
-`;
+    const jsonPrompt = buildJsonFallbackPrompt(
+      new Date().toISOString().split('T')[0],
+    );
 
     const { data } = await axios.post(
       `${this.baseUrl}/api/chat`,
@@ -158,8 +148,7 @@ ${toolDesc}
         messages: [
           {
             role: 'system',
-            content:
-              'لخّص نتيجة العملية للمستخدم بالعربية بشكل واضح ومختصر ومناسب للقراءة الصوتية. لا تستخدم JSON.',
+            content: buildFinalReplyPrompt(),
           },
           {
             role: 'user',

@@ -26,8 +26,13 @@ export class AiToolsService {
     const isAdmin = userRole === Role.ADMIN;
 
     switch (toolName) {
+      case 'list_customers':
+        return this.customers.findAll();
+
       case 'search_customers':
-        return this.customers.findAll(String(args.query ?? ''));
+        return this.customers.findAll(
+          args.query ? String(args.query) : undefined,
+        );
 
       case 'create_customer':
         this.assertCanWrite(userRole);

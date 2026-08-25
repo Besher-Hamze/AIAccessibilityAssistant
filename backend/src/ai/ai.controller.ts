@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Body,
   UseGuards,
   Request,
@@ -51,6 +52,11 @@ export class AiController {
   @Get('history')
   getHistory(@Request() req: { user: { id: string } }) {
     return this.aiAgent.getHistory(req.user.id);
+  }
+
+  @Delete('history')
+  clearHistory(@Request() req: { user: { id: string } }) {
+    return this.aiAgent.clearHistory(req.user.id);
   }
 
   @Get('models')

@@ -84,6 +84,17 @@ class MessageBubble extends StatelessWidget {
                             ),
                           ),
                         ],
+                        if (!isUser && message.toolLabel != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            message.toolLabel!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.teal.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
             ),

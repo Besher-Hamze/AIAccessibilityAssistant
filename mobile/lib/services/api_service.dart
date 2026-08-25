@@ -96,6 +96,10 @@ class ApiService {
     return jsonDecode(response.body) as List<dynamic>;
   }
 
+  Future<void> clearChatHistory() async {
+    await _delete('/ai/history');
+  }
+
   Future<Map<String, dynamic>> speechToText(File audioFile) async {
     final request = http.MultipartRequest(
       'POST',

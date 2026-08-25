@@ -92,6 +92,42 @@ class SettingsScreen extends StatelessWidget {
         ListTile(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           tileColor: Colors.white,
+          leading: const Icon(Icons.delete_outline_rounded, color: AppColors.coral),
+          title: const Text('حذف المحادثة', style: TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: const Text('مسح كل رسائل المساعد من هذا الحساب'),
+          trailing: const Icon(Icons.chevron_left),
+          onTap: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('حذف المحادثة'),
+                content: const Text(
+                  'سيتم حذف كل الرسائل من هذا الحساب. لا يمكن التراجع.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: const Text('إلغاء'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: const Text('حذف'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed != true || !context.mounted) return;
+            final ok = await chat.clearHistory();
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(ok ? 'تم حذف المحادثة' : 'تعذر حذف المحادثة')),
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        ListTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          tileColor: Colors.white,
           leading: const Icon(Icons.help_outline_rounded, color: AppColors.teal),
           title: const Text('أمثلة الأوامر الصوتية', style: TextStyle(fontWeight: FontWeight.w700)),
           trailing: const Icon(Icons.chevron_left),

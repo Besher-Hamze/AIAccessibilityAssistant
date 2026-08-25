@@ -175,6 +175,21 @@ class ChatProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  Future<bool> clearHistory() async {
+    await stopSpeaking();
+    try {
+      await _api.clearChatHistory();
+      _messages = [];
+      _error = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Returns true when a write tool was executed (so UI can refresh data).
   Future<bool> sendTextMessage(
     String text, {
@@ -226,6 +241,8 @@ class ChatProvider extends ChangeNotifier {
         role: 'assistant',
         content: reply,
         createdAt: DateTime.now(),
+        toolUsed: tool,
+        intent: result['intent']?.toString(),
       ));
 
       if (_autoSpeak) {

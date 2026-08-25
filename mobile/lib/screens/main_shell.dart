@@ -36,6 +36,41 @@ class _MainShellState extends State<MainShell> {
 
   void openChat() => setState(() => _index = 4);
 
+  Future<void> _confirmClearChat(BuildContext context) async {
+    final chat = context.read<ChatProvider>();
+    if (chat.messages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا توجد محادثة لحذفها')),
+      );
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف المحادثة'),
+        content: const Text(
+          'سيتم حذف كل الرسائل من هذا الحساب. لا يمكن التراجع.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final ok = await chat.clearHistory();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? 'تم حذف المحادثة' : 'تعذر حذف المحادثة')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -63,6 +98,12 @@ class _MainShellState extends State<MainShell> {
             },
           ),
           actions: [
+            if (_index == 4)
+              IconButton(
+                tooltip: 'حذف المحادثة',
+                onPressed: () => _confirmClearChat(context),
+                icon: const Icon(Icons.delete_outline_rounded),
+              ),
             IconButton(
               tooltip: 'دليل الأوامر',
               onPressed: () {

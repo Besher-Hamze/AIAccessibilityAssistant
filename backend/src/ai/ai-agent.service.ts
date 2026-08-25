@@ -13,6 +13,7 @@ export interface ChatResult {
   reply: string;
   toolUsed?: string;
   toolResult?: unknown;
+  intent?: 'ollama' | 'direct' | 'loose';
   speak: boolean;
 }
 
@@ -46,6 +47,11 @@ export class AiAgentService {
     const messages = history
       .reverse()
       .slice(0, -1)
+      .filter(
+        (m) =>
+          m.role !== 'assistant' ||
+          !/لم أفهم|لم افهم|أعد صياغة|اعد صياغة/.test(m.content),
+      )
       .map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
@@ -53,10 +59,69 @@ export class AiAgentService {
 
     messages.push({ role: 'user', content: message });
 
+    const response = await this.ollama.chat(messages, model);
+
+    if (response.tool_calls?.length) {
+      const call = response.tool_calls[0];
+      const toolName = call.function.name;
+      const args = parseToolArgs(call.function.arguments);
+
+      this.logger.log(
+        `Ollama chose tool: ${toolName} (model=${model ?? 'default'})`,
+      );
+      try {
+        const toolResult = await this.tools.execute(toolName, args, userRole);
+
+        await this.tools.logAudit(userId, toolName, 'ai_command', undefined, {
+          args,
+          model: model ?? null,
+          resultPreview: Array.isArray(toolResult)
+            ? `${toolResult.length} records`
+            : 'object',
+        });
+
+        const formatted = formatToolReply(toolName, toolResult, args);
+        const reply =
+          formatted !== 'تم تنفيذ الطلب.'
+            ? formatted
+            : await this.ollama.generateFinalReply(
+                message,
+                toolName,
+                toolResult,
+                model,
+              );
+
+        await this.prisma.chatMessage.create({
+          data: {
+            userId,
+            role: 'assistant',
+            content: reply,
+            metadata: JSON.parse(
+              JSON.stringify({
+                toolUsed: toolName,
+                toolResult,
+                intent: 'ollama',
+              }),
+            ),
+          },
+        });
+
+        return {
+          reply,
+          toolUsed: toolName,
+          toolResult,
+          intent: 'ollama',
+          speak,
+        };
+      } catch (err) {
+        this.logger.warn(`Ollama tool ${toolName} failed, trying fallback: ${err}`);
+      }
+    }
+
     const direct = matchIntent(message);
     if (direct) {
       try {
-        this.logger.log(`Direct intent: ${direct.tool}`);
+        this.logger.log(`Fallback intent: ${direct.tool}`);
         const toolResult = await this.tools.execute(
           direct.tool,
           direct.args,
@@ -80,56 +145,16 @@ export class AiAgentService {
             ),
           },
         });
-        return { reply, toolUsed: direct.tool, toolResult, speak };
+        return {
+          reply,
+          toolUsed: direct.tool,
+          toolResult,
+          intent: 'direct',
+          speak,
+        };
       } catch (err) {
-        this.logger.warn(`Direct intent failed, falling back to LLM: ${err}`);
+        this.logger.warn(`Direct intent failed: ${err}`);
       }
-    }
-
-    const response = await this.ollama.chat(messages, model);
-
-    if (response.tool_calls?.length) {
-      const call = response.tool_calls[0];
-      const toolName = call.function.name;
-      const args =
-        typeof call.function.arguments === 'string'
-          ? JSON.parse(call.function.arguments)
-          : call.function.arguments;
-
-      this.logger.log(`Executing tool: ${toolName} (model=${model ?? 'default'})`);
-      const toolResult = await this.tools.execute(toolName, args, userRole);
-
-      await this.tools.logAudit(userId, toolName, 'ai_command', undefined, {
-        args,
-        model: model ?? null,
-        resultPreview: Array.isArray(toolResult)
-          ? `${toolResult.length} records`
-          : 'object',
-      });
-
-      const formatted = formatToolReply(toolName, toolResult, args);
-      const reply =
-        formatted !== 'تم تنفيذ الطلب.'
-          ? formatted
-          : await this.ollama.generateFinalReply(
-              message,
-              toolName,
-              toolResult,
-              model,
-            );
-
-      await this.prisma.chatMessage.create({
-        data: {
-          userId,
-          role: 'assistant',
-          content: reply,
-          metadata: JSON.parse(
-            JSON.stringify({ toolUsed: toolName, toolResult }),
-          ),
-        },
-      });
-
-      return { reply, toolUsed: toolName, toolResult, speak };
     }
 
     const loose = matchLooseListIntent(message);
@@ -160,7 +185,13 @@ export class AiAgentService {
             ),
           },
         });
-        return { reply, toolUsed: loose.tool, toolResult, speak };
+        return {
+          reply,
+          toolUsed: loose.tool,
+          toolResult,
+          intent: 'loose',
+          speak,
+        };
       } catch (err) {
         this.logger.warn(`Loose intent failed: ${err}`);
       }
@@ -177,6 +208,13 @@ export class AiAgentService {
     return { reply, speak };
   }
 
+  async clearHistory(userId: string) {
+    const result = await this.prisma.chatMessage.deleteMany({
+      where: { userId },
+    });
+    return { ok: true, deleted: result.count };
+  }
+
   getHistory(userId: string) {
     return this.prisma.chatMessage.findMany({
       where: { userId },
@@ -191,4 +229,21 @@ export class AiAgentService {
       },
     });
   }
+}
+
+function parseToolArgs(raw: unknown): Record<string, unknown> {
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return {};
+    }
+  }
+  return {};
 }

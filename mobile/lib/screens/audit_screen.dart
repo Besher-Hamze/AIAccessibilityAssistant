@@ -101,7 +101,7 @@ class _AuditScreenState extends State<AuditScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.deepTeal.withValues(alpha: 0.06)),
+                                border: Border.all(color: AppColors.navy.withValues(alpha: 0.06)),
                               ),
                               child: Row(
                                 children: [
@@ -109,10 +109,10 @@ class _AuditScreenState extends State<AuditScreen> {
                                     width: 42,
                                     height: 42,
                                     decoration: BoxDecoration(
-                                      color: AppColors.coral.withValues(alpha: 0.12),
+                                      color: AppColors.rose.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: const Icon(Icons.bolt_rounded, color: AppColors.coral),
+                                    child: const Icon(Icons.bolt_rounded, color: AppColors.rose),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(

@@ -18,8 +18,6 @@ class InvoicesScreen extends StatefulWidget {
 }
 
 class _InvoicesScreenState extends State<InvoicesScreen> {
-  String? _statusFilter;
-
   Future<void> _showDetails(Invoice invoice) async {
     final data = context.read<DataProvider>();
     final isAdmin = context.read<AuthProvider>().user?.isAdmin == true;
@@ -34,7 +32,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.cream,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -79,7 +77,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                   children: [
                     const Text('الإجمالي', style: TextStyle(fontWeight: FontWeight.w800)),
                     const Spacer(),
-                    Text(AppFormat.money(full.total), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.teal)),
+                    Text(AppFormat.money(full.total), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
                   ],
                 ),
                 if (isAdmin && full.status != 'CANCELLED') ...[
@@ -132,10 +130,10 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         children: [
           FloatingActionButton.small(
             heroTag: 'pdf',
-            backgroundColor: AppColors.teal,
+            backgroundColor: AppColors.primary,
             onPressed: () => generateAndOpenInvoiceReportPdf(
                   context,
-                  status: _statusFilter,
+                  status: data.invoiceFilter,
                 ),
             child: const Icon(Icons.picture_as_pdf_rounded),
           ),
@@ -162,42 +160,37 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               children: [
                 _FilterChip(
                   label: 'الكل',
-                  selected: _statusFilter == null,
+                  selected: data.invoiceFilter == null,
                   onTap: () {
-                    setState(() => _statusFilter = null);
-                    data.loadInvoices();
+                    data.setInvoiceFilter(null);
                   },
                 ),
                 _FilterChip(
                   label: 'مدفوعة',
-                  selected: _statusFilter == 'PAID',
+                  selected: data.invoiceFilter == 'PAID',
                   onTap: () {
-                    setState(() => _statusFilter = 'PAID');
-                    data.loadInvoices(status: 'PAID');
+                    data.setInvoiceFilter('PAID');
                   },
                 ),
                 _FilterChip(
                   label: 'معلقة',
-                  selected: _statusFilter == 'PENDING',
+                  selected: data.invoiceFilter == 'PENDING',
                   onTap: () {
-                    setState(() => _statusFilter = 'PENDING');
-                    data.loadInvoices(status: 'PENDING');
+                    data.setInvoiceFilter('PENDING');
                   },
                 ),
                 _FilterChip(
                   label: 'مسودة',
-                  selected: _statusFilter == 'DRAFT',
+                  selected: data.invoiceFilter == 'DRAFT',
                   onTap: () {
-                    setState(() => _statusFilter = 'DRAFT');
-                    data.loadInvoices(status: 'DRAFT');
+                    data.setInvoiceFilter('DRAFT');
                   },
                 ),
                 _FilterChip(
                   label: 'ملغاة',
-                  selected: _statusFilter == 'CANCELLED',
+                  selected: data.invoiceFilter == 'CANCELLED',
                   onTap: () {
-                    setState(() => _statusFilter = 'CANCELLED');
-                    data.loadInvoices(status: 'CANCELLED');
+                    data.setInvoiceFilter('CANCELLED');
                   },
                 ),
               ],
@@ -205,7 +198,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           ),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => data.loadInvoices(status: _statusFilter),
+              onRefresh: data.loadInvoices,
               child: data.loadingInvoices && data.invoices.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : data.invoices.isEmpty
@@ -228,7 +221,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.deepTeal.withValues(alpha: 0.06)),
+                                  border: Border.all(color: AppColors.navy.withValues(alpha: 0.06)),
                                 ),
                                 child: Row(
                                   children: [
@@ -236,10 +229,10 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                                       width: 44,
                                       height: 44,
                                       decoration: BoxDecoration(
-                                        color: AppColors.coral.withValues(alpha: 0.12),
+                                        color: AppColors.rose.withValues(alpha: 0.12),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: const Icon(Icons.receipt_rounded, color: AppColors.coral),
+                                      child: const Icon(Icons.receipt_rounded, color: AppColors.rose),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -289,7 +282,7 @@ class _FilterChip extends StatelessWidget {
         label: Text(label),
         selected: selected,
         onSelected: (_) => onTap(),
-        selectedColor: AppColors.mint.withValues(alpha: 0.25),
+        selectedColor: AppColors.accent.withValues(alpha: 0.25),
       ),
     );
   }

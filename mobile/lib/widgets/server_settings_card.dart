@@ -93,14 +93,14 @@ class _ServerSettingsCardState extends State<ServerSettingsCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.deepTeal.withValues(alpha: 0.08)),
+        border: Border.all(color: AppColors.navy.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              const Icon(Icons.dns_rounded, color: AppColors.teal),
+              const Icon(Icons.dns_rounded, color: AppColors.primary),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(

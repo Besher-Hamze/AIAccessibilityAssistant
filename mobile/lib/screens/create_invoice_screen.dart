@@ -108,7 +108,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.deepTeal.withValues(alpha: 0.06)),
+                  border: Border.all(color: AppColors.navy.withValues(alpha: 0.06)),
                 ),
                 child: Row(
                   children: [
@@ -165,7 +165,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.mint.withValues(alpha: 0.12),
+                color: AppColors.accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -174,7 +174,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   const Spacer(),
                   Text(
                     AppFormat.money(_total),
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.teal),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.primary),
                   ),
                 ],
               ),

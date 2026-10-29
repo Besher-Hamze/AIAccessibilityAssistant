@@ -40,7 +40,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.cream,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -172,13 +172,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.deepTeal.withValues(alpha: 0.06)),
+                                border: Border.all(color: AppColors.navy.withValues(alpha: 0.06)),
                               ),
                               child: Row(
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor: AppColors.mint.withValues(alpha: 0.15),
-                                    foregroundColor: AppColors.teal,
+                                    backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+                                    foregroundColor: AppColors.primary,
                                     child: Text(
                                       c.name.isNotEmpty ? c.name.characters.first : '؟',
                                       style: const TextStyle(fontWeight: FontWeight.w800),
@@ -201,7 +201,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                                     children: [
                                       Text(
                                         '${c.invoicesCount}',
-                                        style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.teal),
+                                        style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary),
                                       ),
                                       const Text('فاتورة', style: TextStyle(fontSize: 11, color: AppColors.muted)),
                                     ],

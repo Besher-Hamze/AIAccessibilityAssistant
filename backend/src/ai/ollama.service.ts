@@ -17,6 +17,13 @@ export interface OllamaMessage {
   }>;
 }
 
+/**
+ * Sent with every request: keep the model loaded between voice commands
+ * (cold loads cost seconds) and skip the "thinking" phase of reasoning
+ * models (Qwen 3.x), which only adds latency for short tool calls.
+ */
+const SPEED_OPTIONS = { keep_alive: '30m', think: false } as const;
+
 @Injectable()
 export class OllamaService {
   private readonly logger = new Logger(OllamaService.name);
@@ -62,6 +69,7 @@ export class OllamaService {
       messages: [{ role: 'system', content: systemPrompt }, ...messages],
       tools: AI_TOOLS,
       stream: false,
+      ...SPEED_OPTIONS,
       options: { temperature: 0 },
     };
 
@@ -118,6 +126,7 @@ export class OllamaService {
         messages: [{ role: 'system', content: jsonPrompt }, ...messages],
         stream: false,
         format: 'json',
+        ...SPEED_OPTIONS,
         options: { temperature: 0 },
       },
       { timeout: 180000 },
@@ -177,6 +186,7 @@ export class OllamaService {
           },
         ],
         stream: false,
+        ...SPEED_OPTIONS,
         options: { temperature: 0.3 },
       },
       { timeout: 180000 },

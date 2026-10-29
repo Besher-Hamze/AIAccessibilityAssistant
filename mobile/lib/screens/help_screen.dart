@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/voice_commands.dart';
-import '../providers/chat_provider.dart';
-import '../providers/data_provider.dart';
+import '../providers/voice_assistant_provider.dart';
 import '../theme/app_theme.dart';
 
 class HelpScreen extends StatelessWidget {
@@ -15,16 +14,17 @@ class HelpScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(title: const Text('دليل الأوامر')),
         body: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
           children: [
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.mint.withValues(alpha: 0.12),
+                color: AppColors.accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Text(
-                'اضغط على أي أمر لإرساله مباشرة إلى المساعد الذكي.',
+                'قل أي أمر بصوتك، أو اضغط عليه لتنفيذه مباشرة.\n'
+                'لا حاجة للمس: قل «يا مساعد» ثم الأمر.',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
@@ -45,18 +45,14 @@ class HelpScreen extends StatelessWidget {
                       child: ListTile(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
-                          side: BorderSide(color: AppColors.deepTeal.withValues(alpha: 0.08)),
+                          side: BorderSide(color: AppColors.navy.withValues(alpha: 0.08)),
                         ),
                         tileColor: Colors.white,
-                        leading: const Icon(Icons.mic_rounded, color: AppColors.coral),
+                        leading: const Icon(Icons.mic_rounded, color: AppColors.rose),
                         title: Text(cmd),
-                        onTap: () async {
+                        onTap: () {
                           Navigator.pop(context);
-                          final mutated =
-                              await context.read<ChatProvider>().sendTextMessage(cmd);
-                          if (mutated && context.mounted) {
-                            await context.read<DataProvider>().loadAll();
-                          }
+                          context.read<VoiceAssistantProvider>().submitText(cmd);
                         },
                       ),
                     ),

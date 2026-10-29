@@ -41,7 +41,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.cream,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -211,7 +211,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: AppColors.deepTeal.withValues(alpha: 0.06)),
+                                  border: Border.all(color: AppColors.navy.withValues(alpha: 0.06)),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,10 +220,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                       width: 40,
                                       height: 40,
                                       decoration: BoxDecoration(
-                                        color: AppColors.gold.withValues(alpha: 0.18),
+                                        color: AppColors.amber.withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: const Icon(Icons.inventory_2_rounded, color: AppColors.gold, size: 20),
+                                      child: const Icon(Icons.inventory_2_rounded, color: AppColors.amber, size: 20),
                                     ),
                                     const Spacer(),
                                     Text(
@@ -235,7 +235,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       AppFormat.money(p.price),
-                                      style: const TextStyle(color: AppColors.teal, fontWeight: FontWeight.w700),
+                                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
                                     ),
                                     const SizedBox(height: 6),
                                     Container(

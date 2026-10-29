@@ -241,22 +241,22 @@ class _UsersScreenState extends State<UsersScreen> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppColors.deepTeal.withValues(alpha: 0.08),
+                                color: AppColors.navy.withValues(alpha: 0.08),
                               ),
                             ),
                             child: Row(
                               children: [
                                 CircleAvatar(
                                   backgroundColor: isAdmin
-                                      ? AppColors.coral.withValues(alpha: 0.15)
-                                      : AppColors.mint.withValues(alpha: 0.25),
+                                      ? AppColors.rose.withValues(alpha: 0.15)
+                                      : AppColors.accent.withValues(alpha: 0.25),
                                   child: Icon(
                                     isAdmin
                                         ? Icons.admin_panel_settings_rounded
                                         : Icons.person_rounded,
                                     color: isAdmin
-                                        ? AppColors.coral
-                                        : AppColors.teal,
+                                        ? AppColors.rose
+                                        : AppColors.primary,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -299,16 +299,16 @@ class _UsersScreenState extends State<UsersScreen> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: isAdmin
-                                        ? AppColors.coral.withValues(alpha: 0.12)
-                                        : AppColors.teal.withValues(alpha: 0.12),
+                                        ? AppColors.rose.withValues(alpha: 0.12)
+                                        : AppColors.primary.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
                                     isAdmin ? 'مدير' : 'مستخدم',
                                     style: TextStyle(
                                       color: isAdmin
-                                          ? AppColors.coral
-                                          : AppColors.teal,
+                                          ? AppColors.rose
+                                          : AppColors.primary,
                                       fontWeight: FontWeight.w700,
                                       fontSize: 12,
                                     ),

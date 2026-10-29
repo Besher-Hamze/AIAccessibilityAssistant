@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
-import '../providers/data_provider.dart';
+import '../providers/voice_assistant_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/server_settings_card.dart';
-import 'main_shell.dart';
+import '../widgets/voice_orb.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,34 +19,49 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController(text: 'admin123');
   final _formKey = GlobalKey<FormState>();
   bool _obscure = true;
+  late final VoiceAssistantProvider _voice;
+
+  @override
+  void initState() {
+    super.initState();
+    _voice = context.read<VoiceAssistantProvider>();
+    _voice.loginHandler = _voiceLogin;
+  }
 
   @override
   void dispose() {
+    if (_voice.loginHandler == _voiceLogin) _voice.loginHandler = null;
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
-    final auth = context.read<AuthProvider>();
-    final success = await auth.login(
-      _emailController.text.trim(),
-      _passwordController.text,
-    );
-    if (success && mounted) {
-      context.read<DataProvider>().loadAll();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainShell()),
-      );
+  /// "ادخل كمدير" / "ادخل كمستخدم" fill the demo account; "ادخل" uses the form.
+  Future<bool> _voiceLogin(String? role) async {
+    if (role == 'user') {
+      _emailController.text = 'user@accounting.local';
+      _passwordController.text = 'user123';
+    } else if (role == 'admin' && _emailController.text.trim().isEmpty) {
+      _emailController.text = 'admin@accounting.local';
+      _passwordController.text = 'admin123';
     }
+    return _login();
+  }
+
+  Future<bool> _login() async {
+    if (!_formKey.currentState!.validate()) return false;
+    // The auth gate swaps to the main shell when this succeeds.
+    return context.read<AuthProvider>().login(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
   }
 
   void _openServerSettings() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.cream,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -83,19 +98,14 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final voice = context.watch<VoiceAssistantProvider>();
     final size = MediaQuery.sizeOf(context);
 
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [AppColors.deepTeal, AppColors.teal, Color(0xFF1B7A70)],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.heroGradient),
         child: SafeArea(
           child: Stack(
             children: [
@@ -116,17 +126,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white24),
+                    Semantics(
+                      button: true,
+                      label: 'المساعد الصوتي. ${voice.statusLabel}',
+                      child: GestureDetector(
+                        onTap: voice.onOrbTap,
+                        child: VoiceOrb(phase: voice.phase, level: voice.level, size: 170),
                       ),
-                      child: const Icon(Icons.account_balance_wallet_rounded, size: 42, color: Colors.white),
                     ),
-                    const SizedBox(height: 20),
+                    Text(
+                      voice.hint ?? voice.statusLabel,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Color(0xFF99E9F2), fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 12),
                     const Text(
                       'محاسب+',
                       style: TextStyle(
@@ -142,11 +155,33 @@ class _LoginScreenState extends State<LoginScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 14, height: 1.4),
                     ),
-                    const SizedBox(height: 36),
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.mic_rounded, color: Color(0xFF99E9F2)),
+                          SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'بدون يدين: قل «ادخل» لتسجيل الدخول بصوتك',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     Container(
                       padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
-                        color: AppColors.cream,
+                        color: AppColors.background,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(

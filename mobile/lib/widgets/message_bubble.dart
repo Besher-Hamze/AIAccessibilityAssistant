@@ -30,7 +30,7 @@ class MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 gradient: isUser
-                    ? const LinearGradient(colors: [AppColors.deepTeal, AppColors.teal])
+                    ? const LinearGradient(colors: [AppColors.navy, AppColors.primary])
                     : null,
                 color: isUser ? null : Colors.white,
                 borderRadius: BorderRadius.only(
@@ -41,7 +41,7 @@ class MessageBubble extends StatelessWidget {
                 ),
                 border: isUser
                     ? null
-                    : Border.all(color: AppColors.deepTeal.withValues(alpha: 0.08)),
+                    : Border.all(color: AppColors.navy.withValues(alpha: 0.08)),
               ),
               child: message.isLoading
                   ? Row(
@@ -52,7 +52,7 @@ class MessageBubble extends StatelessWidget {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: isUser ? Colors.white : AppColors.teal,
+                            color: isUser ? Colors.white : AppColors.primary,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -91,7 +91,7 @@ class MessageBubble extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.teal.withValues(alpha: 0.9),
+                              color: AppColors.primary.withValues(alpha: 0.9),
                             ),
                           ),
                         ],
@@ -116,7 +116,7 @@ class MessageBubble extends StatelessWidget {
                             ? Icons.stop_circle_rounded
                             : Icons.volume_up_rounded,
                         size: 20,
-                        color: isSpeaking ? AppColors.danger : AppColors.teal,
+                        color: isSpeaking ? AppColors.danger : AppColors.primary,
                       ),
                     ),
                 ],

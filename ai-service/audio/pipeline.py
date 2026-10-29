@@ -11,10 +11,13 @@ from .arabic_corrector import correct_arabic
 from .denoise import denoise
 from .gender_rnn import GenderClassifier
 
+# Biases Whisper toward the app's vocabulary (accounting + voice navigation).
 ACCOUNTING_PROMPT = (
     "أوامر محاسبة عربية: أضف عميل، أنشئ فاتورة، اعرض المنتجات، "
     "ملخص المحاسبة، تقرير الفواتير المعلقة والمدفوعة، مخزون، "
-    "محمد الأحمد، علي الحسين، برنامج محاسبة، خدمة استشارية."
+    "محمد الأحمد، علي الحسين، برنامج محاسبة، خدمة استشارية. "
+    "افتح العملاء، روح عالفواتير، افتح المنتجات، الإعدادات، الرئيسية، "
+    "انزل لتحت، اطلع لفوق، ارجع، اقرأ الشاشة، اسكت، يا مساعد."
 )
 
 

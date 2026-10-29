@@ -7,9 +7,12 @@ import 'providers/auth_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/data_provider.dart';
 import 'providers/demo_provider.dart';
+import 'providers/navigation_provider.dart';
+import 'providers/voice_assistant_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'theme/app_theme.dart';
+import 'widgets/assistant_layer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +36,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AccessibilityProvider()..init()),
         ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
         ChangeNotifierProvider(create: (_) => DemoProvider()),
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProxyProvider<AuthProvider, ChatProvider>(
           create: (ctx) => ChatProvider(ctx.read<AuthProvider>().apiService),
           update: (_, auth, previous) {
@@ -45,12 +49,24 @@ class MyApp extends StatelessWidget {
             return previous ?? DataProvider(auth.apiService);
           },
         ),
+        ChangeNotifierProvider(
+          lazy: false,
+          create: (ctx) => VoiceAssistantProvider(
+            chat: ctx.read<ChatProvider>(),
+            data: ctx.read<DataProvider>(),
+            a11y: ctx.read<AccessibilityProvider>(),
+            auth: ctx.read<AuthProvider>(),
+            demo: ctx.read<DemoProvider>(),
+            nav: ctx.read<NavigationProvider>(),
+          ),
+        ),
       ],
       child: Consumer<AccessibilityProvider>(
         builder: (context, a11y, _) {
           return MaterialApp(
             title: 'محاسب+',
             debugShowCheckedModeBanner: false,
+            navigatorKey: context.read<NavigationProvider>().navigatorKey,
             theme: AppTheme.light(
               highContrast: a11y.highContrast,
               largeControls: a11y.largeControls,
@@ -58,9 +74,12 @@ class MyApp extends StatelessWidget {
             builder: (context, child) {
               return MediaQuery(
                 data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(a11y.largeControls ? 1.08 : 1.0),
+                  textScaler: TextScaler.linear(a11y.largeControls ? 1.1 : 1.0),
                 ),
-                child: child ?? const SizedBox.shrink(),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: AssistantLayer(child: child ?? const SizedBox.shrink()),
+                ),
               );
             },
             home: const _AuthGate(),
@@ -78,12 +97,11 @@ class _AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        if (auth.isAuthenticated) {
-          return const MainShell();
-        }
-        return const Directionality(
-          textDirection: TextDirection.rtl,
-          child: LoginScreen(),
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          child: auth.isAuthenticated
+              ? const MainShell(key: ValueKey('shell'))
+              : const LoginScreen(key: ValueKey('login')),
         );
       },
     );

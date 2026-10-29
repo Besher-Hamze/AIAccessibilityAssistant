@@ -14,6 +14,10 @@ class DataProvider extends ChangeNotifier {
   List<Invoice> invoices = [];
   Map<String, dynamic>? summary;
 
+  /// Invoice status filter shown on the invoices screen (null = all).
+  /// Lives here so voice commands and the filter chips share it.
+  String? invoiceFilter;
+
   bool loadingCustomers = false;
   bool loadingProducts = false;
   bool loadingInvoices = false;
@@ -68,11 +72,16 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadInvoices({String? status}) async {
+  Future<void> setInvoiceFilter(String? status) {
+    invoiceFilter = status;
+    return loadInvoices();
+  }
+
+  Future<void> loadInvoices() async {
     loadingInvoices = true;
     notifyListeners();
     try {
-      invoices = await api.getInvoices(status: status);
+      invoices = await api.getInvoices(status: invoiceFilter);
       error = null;
     } catch (e) {
       error = e.toString().replaceAll('Exception: ', '');

@@ -12,7 +12,7 @@ start "Backend" cmd /k "cd /d %~dp0backend && npm run start:dev"
 timeout /t 3 /nobreak >nul
 start "AI Voice" cmd /k "cd /d %~dp0ai-service && start.bat"
 timeout /t 2 /nobreak >nul
-@REM  rem nuget.exe (needed by flutter_tts on Windows) lives in %LOCALAPPDATA%\nuget
-@REM  start "Flutter" cmd /k "set PATH=%LOCALAPPDATA%\nuget;%PATH% && cd /d %~dp0mobile && flutter run "
+rem nuget.exe (needed by flutter_tts on Windows) lives in %LOCALAPPDATA%\nuget
+start "Flutter" cmd /k "set PATH=%LOCALAPPDATA%\nuget;%PATH% && cd /d %~dp0mobile && flutter run "
 
 echo All services starting in separate windows...

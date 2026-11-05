@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { OllamaService } from './ollama.service';
+import { OllamaMessage, OllamaService } from './ollama.service';
 import { AiToolsService } from './ai-tools.service';
 import {
   formatToolReply,
@@ -33,8 +33,9 @@ export class AiAgentService {
     userRole: Role,
     speak = true,
     model?: string,
+    signal?: AbortSignal,
   ): Promise<ChatResult> {
-    await this.prisma.chatMessage.create({
+    const userMessage = await this.prisma.chatMessage.create({
       data: { userId, role: 'user', content: message },
     });
 
@@ -59,7 +60,21 @@ export class AiAgentService {
 
     messages.push({ role: 'user', content: message });
 
-    const response = await this.ollama.chat(messages, model);
+    let response: OllamaMessage;
+    let modelFailed = false;
+    try {
+      response = await this.ollama.chat(messages, model, signal);
+    } catch (err) {
+      if (signal?.aborted) {
+        // Cancelled by the user: do nothing, and keep it out of the history.
+        await this.prisma.chatMessage.delete({ where: { id: userMessage.id } });
+        return { reply: '', speak: false };
+      }
+      // Model down or too slow: the keyword matchers below can still answer.
+      this.logger.warn(`Ollama failed: ${err}`);
+      modelFailed = true;
+      response = { role: 'assistant', content: '' };
+    }
 
     if (response.tool_calls?.length) {
       const call = response.tool_calls[0];
@@ -114,7 +129,15 @@ export class AiAgentService {
           speak,
         };
       } catch (err) {
-        this.logger.warn(`Ollama tool ${toolName} failed, trying fallback: ${err}`);
+        this.logger.warn(`Ollama tool ${toolName} failed: ${err}`);
+        // A real reason ("not enough stock") helps more than a retry that could
+        // run a different, wrong action.
+        const reason = errorMessage(err);
+        const reply = `تعذّر تنفيذ الطلب: ${reason}`;
+        await this.prisma.chatMessage.create({
+          data: { userId, role: 'assistant', content: reply },
+        });
+        return { reply, toolUsed: toolName, intent: 'ollama', speak };
       }
     }
 
@@ -197,9 +220,12 @@ export class AiAgentService {
       }
     }
 
+    const modelText = response.content?.trim();
     const reply =
-      response.content?.trim() ||
-      'عذراً، لم أفهم طلبك. هل يمكنك إعادة صياغته؟';
+      (modelText && !NOT_ARABIC_SCRIPT.test(modelText) ? modelText : '') ||
+      (modelFailed
+        ? 'لا أستطيع الوصول إلى نموذج الذكاء حالياً. يمكنك استخدام أوامر التنقل مثل: افتح العملاء.'
+        : 'عذراً، لم أفهم طلبك. هل يمكنك إعادة صياغته؟');
 
     await this.prisma.chatMessage.create({
       data: { userId, role: 'assistant', content: reply },
@@ -229,6 +255,15 @@ export class AiAgentService {
       },
     });
   }
+}
+
+/** Small models sometimes drift into Chinese or Russian, which the Arabic voice cannot read. */
+const NOT_ARABIC_SCRIPT = /[\u0400-\u04ff\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/;
+
+function errorMessage(err: unknown): string {
+  const response = (err as { response?: { message?: unknown } }).response;
+  if (typeof response?.message === 'string') return response.message;
+  return err instanceof Error ? err.message : 'خطأ غير معروف';
 }
 
 function parseToolArgs(raw: unknown): Record<string, unknown> {

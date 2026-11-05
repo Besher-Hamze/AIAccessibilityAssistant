@@ -11,8 +11,11 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../screens/audit_screen.dart';
 import '../screens/create_invoice_screen.dart';
+import '../screens/customer_detail_screen.dart';
 import '../screens/help_screen.dart';
+import '../screens/insights_screen.dart';
 import '../screens/users_screen.dart';
+import '../models/customer.dart';
 import '../utils/report_pdf_helper.dart';
 import '../voice/arabic_text.dart';
 import '../voice/voice_command_router.dart';
@@ -85,7 +88,31 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
   bool _typing = false;
   bool _showTranscript = false;
   String? _heard;
-  String? _hint;
+  String? _hintText;
+  Timer? _hintTimer;
+
+  /// Hints clear themselves, so an old message never looks like a stuck app.
+  String? get _hint => _hintText;
+  set _hint(String? value) {
+    _hintText = value;
+    _hintTimer?.cancel();
+    if (value != null) {
+      _hintTimer = Timer(const Duration(seconds: 6), () {
+        _hintText = null;
+        if (!_disposed) notifyListeners();
+      });
+    }
+  }
+
+  /// Each spoken or typed command is a turn; cancelling starts a new one, and
+  /// whatever the old turn was waiting for is ignored when it finally arrives.
+  int _turn = 0;
+  Completer<void> _cancelSignal = Completer<void>();
+  bool _skipBackoff = false;
+  bool _enrolling = false;
+  bool _hasVoiceprint = false;
+  bool _voiceprintAvailable = false;
+  int _rejectedInARow = 0;
 
   bool _disposed = false;
   bool _appActive = true;
@@ -107,7 +134,15 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
   double? _appliedRate;
   bool? _wasAuthenticated;
 
-  VoicePhase get phase => _chat.isSpeaking ? VoicePhase.speaking : _phase;
+  VoicePhase get phase {
+    if (_chat.isSpeaking) return VoicePhase.speaking;
+    if (_chat.isProcessing) return VoicePhase.thinking;
+    return _phase;
+  }
+
+  bool get hasVoiceprint => _hasVoiceprint;
+  bool get voiceprintAvailable => _voiceprintAvailable;
+  bool get enrolling => _enrolling;
   bool get expanded => _expanded;
   bool get typing => _typing;
   bool get showTranscript => _showTranscript;
@@ -117,11 +152,12 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
   String? get reply => _chat.lastAssistantReply;
 
   String get statusLabel {
+    if (_enrolling) return 'اقرأ هذه الجملة بصوتك:';
     switch (phase) {
       case VoicePhase.listening:
         return 'أستمع إليك…';
       case VoicePhase.thinking:
-        return 'لحظة، أفكّر…';
+        return 'لحظة، أفكّر… المس الدائرة للإلغاء';
       case VoicePhase.speaking:
         return 'أتحدث الآن — المس الدائرة لإيقافي';
       case VoicePhase.sleeping:
@@ -160,12 +196,54 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
     notifyListeners();
   }
 
-  /// The orb is the single big button: talk, stop talking, wake up.
+  /// Stops whatever is going on (speech, waiting for an answer, transcribing)
+  /// and opens a new recording. This is the way out of any stuck moment.
+  void restartListening() {
+    HapticFeedback.mediumImpact();
+    _cancelCurrent();
+    _lastActivity = DateTime.now();
+    _announceListening = true;
+    _hint = null;
+    if (handsFree) {
+      _phase = VoicePhase.listening;
+      _startLoop();
+    } else {
+      _phase = VoicePhase.idle;
+      unawaited(_listenOnceWhenFree());
+    }
+    notifyListeners();
+  }
+
+  void _cancelCurrent() {
+    _turn++;
+    final signal = _cancelSignal;
+    _cancelSignal = Completer<void>();
+    if (!signal.isCompleted) signal.complete();
+    _pending = null;
+    _skipBackoff = true;
+    _heard = null;
+    _chat.cancelProcessing();
+    unawaited(_chat.stopSpeaking());
+    _abortCapture();
+    _deleteQuietly(_queuedAudio);
+    _queuedAudio = null;
+  }
+
+  Future<void> _listenOnceWhenFree() async {
+    for (var i = 0; i < 30 && (_capturing || _busy); i++) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    if (!_disposed && !_capturing && !_busy) await _listenOnce();
+  }
+
+  void setCaptionsVisible(bool visible) => _a11y.setShowCaptions(visible);
+
+  /// The orb is the single big button: talk, send now, stop and start over.
   void onOrbTap() {
     HapticFeedback.mediumImpact();
     _hint = null;
-    if (_chat.isSpeaking) {
-      _chat.stopSpeaking();
+    if (_chat.isSpeaking || _chat.isProcessing || _phase == VoicePhase.thinking) {
+      restartListening();
       return;
     }
     switch (_phase) {
@@ -199,6 +277,7 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
     _typing = false;
     expand();
     _abortCapture();
+    _chat.cancelProcessing();
     await handleText(text.trim());
   }
 
@@ -278,6 +357,7 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
     if (authed) {
       _chat.loadHistory();
       _chat.loadModels();
+      unawaited(refreshVoiceprintStatus());
     } else if (!firstCheck) {
       _chat.resetSession();
       _heard = null;
@@ -327,10 +407,10 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
     _loopRunning = true;
     try {
       while (_canListen) {
-        // Wait while we are answering, speaking (barge-in watch is listening
-        // meanwhile) or running a demo.
-        while (_canListen &&
-            (_busy || _chat.isSpeaking || _chat.isProcessing || _capturing)) {
+        // Wait while we are speaking (barge-in watch is listening meanwhile) or
+        // running a local command. The mic stays open while an answer is on its
+        // way, so a new sentence can replace a request that takes too long.
+        while (_canListen && (_busy || _chat.isSpeaking || _capturing)) {
           await Future.delayed(const Duration(milliseconds: 100));
         }
         if (!_canListen) break;
@@ -338,7 +418,7 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
         final interrupted = _queuedAudio;
         if (interrupted != null) {
           _queuedAudio = null;
-          await _processAudio(interrupted, sleeping: false);
+          await _safely(() => _processAudio(interrupted, sleeping: false));
           continue;
         }
 
@@ -356,7 +436,7 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
         if (path == null) {
           if (_captureFailed) {
             _failures++;
-            await Future.delayed(Duration(seconds: math.min(20, 1 << _failures)));
+            await _backoff();
           } else if (!sleeping &&
               _a11y.autoSleep &&
               _auth.isAuthenticated &&
@@ -365,11 +445,31 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
           }
           continue;
         }
-        await _processAudio(path, sleeping: sleeping);
+        await _safely(() => _processAudio(path, sleeping: sleeping));
       }
     } finally {
       _loopRunning = false;
       if (!_disposed && _phase == VoicePhase.listening) _setPhase(VoicePhase.idle);
+    }
+  }
+
+  /// One failed command must never end the listening loop.
+  Future<void> _safely(Future<void> Function() work) async {
+    try {
+      await work();
+    } catch (e) {
+      debugPrint('Voice turn failed: $e');
+      _hint = 'حدث خطأ. يمكنك إعادة المحاولة';
+      _setPhase(handsFree ? VoicePhase.listening : VoicePhase.idle);
+    }
+  }
+
+  /// Waits a little after a failure; touching the orb skips the wait.
+  Future<void> _backoff() async {
+    _skipBackoff = false;
+    final until = DateTime.now().add(Duration(seconds: math.min(8, 1 << _failures)));
+    while (!_skipBackoff && !_disposed && DateTime.now().isBefore(until)) {
+      await Future.delayed(const Duration(milliseconds: 150));
     }
   }
 
@@ -387,7 +487,7 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
       notifyListeners();
       return;
     }
-    await _processAudio(path, sleeping: false);
+    await _safely(() => _processAudio(path, sleeping: false));
     if (_phase != VoicePhase.sleeping) _setPhase(VoicePhase.idle);
     if (_listenAfterSpeaking && !handsFree) {
       _listenAfterSpeaking = false;
@@ -430,7 +530,7 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
         notifyListeners();
         return null;
       }
-      if (_announceListening && !sleeping && !bargeIn) {
+      if (_announceListening && !sleeping && !bargeIn && !_chat.isProcessing) {
         _announceListening = false;
         await _earcon('listen_start');
       }
@@ -553,6 +653,11 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
         return null;
       }
       final file = out ?? path;
+      // Stopped at the very moment it started: nothing but a header was written.
+      if (File(file).lengthSync() < 2000) {
+        _deleteQuietly(file);
+        return null;
+      }
       if (bargeIn) await trimWavStart(file, trimMs);
       if (!sleeping) unawaited(_earcon('listen_end'));
       return file;
@@ -574,10 +679,17 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
   }
 
   Future<void> _processAudio(String path, {required bool sleeping}) async {
-    if (!sleeping) _setPhase(VoicePhase.thinking);
-    Map<String, dynamic> stt;
+    if (!sleeping) {
+      _heard = null; // Not the sentence being transcribed now.
+      _setPhase(VoicePhase.thinking);
+    }
+    final cancelled = _cancelSignal.future;
+    Map<String, dynamic>? stt;
     try {
-      stt = await _chat.transcribe(path);
+      stt = await Future.any<Map<String, dynamic>?>([
+        _chat.transcribe(path),
+        cancelled.then((_) => null),
+      ]);
       _failures = 0;
     } catch (e) {
       _failures++;
@@ -590,21 +702,43 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
         }
         _setPhase(handsFree ? VoicePhase.listening : VoicePhase.idle);
       }
-      await Future.delayed(Duration(seconds: math.min(20, 1 << _failures)));
+      await _backoff();
       return;
     }
     _deleteQuietly(path);
+    if (stt == null) return; // The user cancelled while it was transcribing.
+
+    final idle = handsFree ? VoicePhase.listening : VoicePhase.idle;
+
+    if (stt['speaker_rejected'] == true) {
+      if (!sleeping) {
+        _rejectedInARow++;
+        _hint = 'سمعت صوتاً غير صوتك المسجّل فتجاهلته';
+        _setPhase(idle);
+        // Don't lock out a user whose voice no longer matches (new mic, a cold).
+        if (_rejectedInARow == 5) {
+          await _chat.speakNow(
+            'لا أتعرف على هذا الصوت. إذا كان هذا صوتك فأعد تسجيل البصمة من الإعدادات.',
+          );
+        }
+      }
+      return;
+    }
 
     final text = (stt['text'] as String? ?? '').trim();
     final norm = ArabicText.normalize(text);
     if (norm.isEmpty || ArabicText.isLikelyNoise(norm)) {
       if (!sleeping) {
-        _hint = 'لم أفهم جيداً، أعد من فضلك';
-        _setPhase(handsFree ? VoicePhase.listening : VoicePhase.idle);
+        // Plain noise needs no reaction; say something only if it was speech.
+        if (stt['speaker_focus'] != 'no_speech' && !_chat.isProcessing) {
+          _hint = 'لم أفهم جيداً، أعد من فضلك';
+        }
+        _setPhase(idle);
         notifyListeners();
       }
       return;
     }
+    _rejectedInARow = 0;
 
     if (sleeping) {
       final rest = VoiceCommandRouter.afterWakeWord(norm);
@@ -631,7 +765,11 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
     double? confidence,
   }) async {
     if (_busy) return;
+    // A new command replaces one that is still waiting for its answer.
+    _chat.cancelProcessing();
+    final turn = ++_turn;
     _busy = true;
+    var holdsBusy = true;
     _lastActivity = DateTime.now();
     _hint = null;
     _heard = text;
@@ -671,31 +809,155 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
         return;
       }
 
+      final customerName = VoiceCommandRouter.customerQuery(norm);
+      final customer = customerName == null ? null : _findCustomer(customerName);
+      if (customer != null) {
+        await _openCustomer(customer.id, text);
+        return;
+      }
+
+      // The mic stays open from here on (see _runLoop).
+      _busy = false;
+      holdsBusy = false;
       _setPhase(VoicePhase.thinking);
-      final mutated = await _chat.sendTextMessage(
+      await _chat.sendTextMessage(
         text,
         speakerGender: speakerGender,
         speakerGenderAr: speakerGenderAr,
         confidence: confidence,
+        onReply: (tool, result, mutated) {
+          if (turn != _turn) return;
+          if (mutated) unawaited(_data.loadAll());
+          _followTool(tool, result);
+        },
       );
-      if (mutated) unawaited(_data.loadAll());
-      _followTool(_chat.lastToolUsed);
+    } catch (e) {
+      debugPrint('Command failed: $e');
+      if (turn == _turn) {
+        await _say('حدث خطأ أثناء تنفيذ الأمر. حاول مرة أخرى.', force: true);
+      }
     } finally {
-      _busy = false;
-      _lastActivity = DateTime.now();
-      if (_phase == VoicePhase.thinking) {
-        _setPhase(handsFree ? VoicePhase.listening : VoicePhase.idle);
+      if (holdsBusy) _busy = false;
+      if (turn == _turn) {
+        _lastActivity = DateTime.now();
+        if (_phase == VoicePhase.thinking) {
+          _setPhase(handsFree ? VoicePhase.listening : VoicePhase.idle);
+        }
       }
       notifyListeners();
     }
   }
 
+  Customer? _findCustomer(String query) {
+    final words = query.split(' ');
+    for (final c in _data.customers) {
+      final name = ArabicText.normalize(c.name);
+      if (words.every(name.contains)) return c;
+    }
+    return null;
+  }
+
+  Future<void> _openCustomer(String id, String userText) async {
+    collapse();
+    final account = await _data.api.getCustomerAccount(id);
+    _nav.popToRoot();
+    unawaited(_nav.push(CustomerDetailScreen(customerId: id)));
+    await _say(account.spokenSummary, userText: userText);
+  }
+
+  // ───────────────────────── voiceprint ─────────────────────────
+
+  static const _enrollSentence =
+      'أنا أستخدم هذا المساعد للتحكم بالنظام المحاسبي بصوتي، وأريد أن يستمع إليّ أنا فقط دون غيري من الموجودين.';
+
+  Future<void> refreshVoiceprintStatus() async {
+    try {
+      final status = await _chat.voiceprintStatus();
+      _hasVoiceprint = status['enrolled'] == true;
+      _voiceprintAvailable = status['available'] == true;
+      if (!_disposed) notifyListeners();
+    } catch (_) {}
+  }
+
+  /// From the settings button; a voice command goes through [_enrollFlow].
+  Future<void> enrollVoice() async {
+    if (_busy || !_auth.isAuthenticated) return;
+    _cancelCurrent();
+    _busy = true;
+    try {
+      await _enrollFlow();
+    } finally {
+      _busy = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _enrollFlow() async {
+    _abortCapture();
+    for (var i = 0; i < 30 && _capturing; i++) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    expand();
+    _enrolling = true;
+    _heard = _enrollSentence;
+    notifyListeners();
+    String? path;
+    try {
+      await _say('بعد الإشارة، اقرأ الجملة الظاهرة على الشاشة بصوتك.', force: true);
+      _announceListening = true;
+      _setPhase(VoicePhase.listening);
+      path = await _capture(sleeping: false, noSpeechTimeout: const Duration(seconds: 15));
+      _setPhase(VoicePhase.thinking);
+      if (path == null) {
+        await _say('لم أسمع شيئاً. حاول مرة أخرى من الإعدادات، أو قل: سجل بصمة صوتي.', force: true);
+        return;
+      }
+      final result = await _chat.enrollVoiceprint(path);
+      if (result['ok'] == true) {
+        _hasVoiceprint = true;
+        _rejectedInARow = 0;
+        await _say('تم حفظ بصمة صوتك. سأستمع إليك أنت فقط من الآن.', force: true);
+      } else {
+        await _say('كان الكلام قصيراً. أعد المحاولة واقرأ الجملة كاملة.', force: true);
+      }
+    } catch (e) {
+      debugPrint('Voiceprint enrollment failed: $e');
+      await _say('تعذّر حفظ البصمة. تأكد من تشغيل خدمة الصوت.', force: true);
+    } finally {
+      _deleteQuietly(path);
+      _enrolling = false;
+      _heard = null;
+      _setPhase(handsFree ? VoicePhase.listening : VoicePhase.idle);
+    }
+  }
+
+  Future<void> deleteVoice() async {
+    await _chat.deleteVoiceprint();
+    _hasVoiceprint = false;
+    notifyListeners();
+  }
+
   /// Shows the matching screen behind the assistant after an AI answer.
-  void _followTool(String? tool) {
+  void _followTool(String? tool, dynamic result) {
     if (tool == null) return;
+    if (tool == 'get_customer_account' && result is Map) {
+      final customer = result['customer'];
+      if (customer is Map && customer['id'] != null) {
+        collapse();
+        _nav.popToRoot();
+        unawaited(_nav.push(CustomerDetailScreen(customerId: '${customer['id']}')));
+      }
+      return;
+    }
+    if (const {'top_customers', 'top_products', 'customers_with_balance', 'sales_by_month'}
+        .contains(tool)) {
+      _nav.popToRoot();
+      unawaited(_nav.push(const InsightsScreen()));
+      return;
+    }
     final int? tab = switch (tool) {
       'list_customers' || 'search_customers' || 'create_customer' || 'update_customer' => 1,
-      'list_products' || 'create_product' || 'update_product_stock' => 2,
+      'list_products' || 'create_product' || 'update_product_stock' || 'low_stock_products' || 'add_product_stock' => 2,
       'get_accounting_summary' => 0,
       _ when tool.contains('invoice') || tool == 'generate_report' => 3,
       _ => null,
@@ -920,6 +1182,29 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
       case VoiceActionType.typeText:
         setTyping(true);
         await _say('اكتب طلبك في الحقل.', userText: userText);
+
+      case VoiceActionType.cancel:
+        await _chat.stopSpeaking();
+        _hint = 'ألغيت. تفضّل، أنا أستمع';
+
+      case VoiceActionType.hideCaptions:
+        await _a11y.setShowCaptions(false);
+        await _say('أخفيت المربع. قل: أظهر المربع لإعادته.', userText: userText);
+
+      case VoiceActionType.showCaptions:
+        await _a11y.setShowCaptions(true);
+        await _say('أعدت المربع.', userText: userText);
+
+      case VoiceActionType.enrollVoice:
+        if (!_requireAuth(userText)) return;
+        await _enrollFlow();
+
+      case VoiceActionType.deleteVoice:
+        if (!_requireAuth(userText)) return;
+        await _confirm('هل تريد حذف بصمة صوتك؟ قل نعم أو لا.', userText, () async {
+          await deleteVoice();
+          await _say('حذفت البصمة. سأستمع للمتكلم الأساسي في كل تسجيل.', force: true);
+        });
     }
   }
 
@@ -953,6 +1238,9 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
       case AppDestination.newInvoice:
         _nav.popToRoot();
         unawaited(_nav.push(const CreateInvoiceScreen()));
+      case AppDestination.insights:
+        _nav.popToRoot();
+        unawaited(_nav.push(const InsightsScreen()));
     }
     final spoken = switch (d) {
       AppDestination.home => 'الصفحة الرئيسية. ${_homeSummary()}',
@@ -963,6 +1251,7 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
       AppDestination.help => 'دليل الأوامر.',
       AppDestination.users => 'إدارة المستخدمين.',
       AppDestination.audit => 'سجل العمليات.',
+      AppDestination.insights => 'التحليلات: أفضل العملاء، والمبالغ المعلقة، والمبيعات الشهرية.',
       AppDestination.newInvoice =>
         'شاشة فاتورة جديدة. يمكنك أيضاً أن تقول: أنشئ فاتورة لفلان بمنتج كذا.',
     };
@@ -1027,6 +1316,8 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
       return 'أنت في شاشة تسجيل الدخول. قل: ادخل، لتسجيل الدخول.';
     }
     if (_nav.hasPushedRoute) {
+      final reader = _nav.subpageReader;
+      if (reader != null) return reader();
       return 'أنت في صفحة فرعية. قل: انزل أو اطلع للتصفح، أو ارجع للعودة.';
     }
     return switch (_nav.tab) {
@@ -1064,7 +1355,8 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
   static const _helpText =
       'يمكنك أن تقول مثلاً: افتح العملاء، أو اعرض فواتير محمد الأحمد، أو أضف عميلاً اسمه سارة، '
       'أو ما ملخص المحاسبة. وللتنقل قل: انزل، اطلع، ارجع، أو اقرأ الشاشة. '
-      'لإيقاف كلامي قل: اسكت، وللراحة قل: نام، ولإيقاظي قل: يا مساعد.';
+      'وتستطيع طلب حساب أي عميل، أو من لم يدفع، أو أكثر المنتجات مبيعاً. '
+      'لإيقاف كلامي قل: اسكت، ولإلغاء طلب قل: الغي، وللراحة قل: نام، ولإيقاظي قل: يا مساعد.';
 
   // ───────────────────────── helpers ─────────────────────────
 
@@ -1089,6 +1381,7 @@ class VoiceAssistantProvider extends ChangeNotifier with WidgetsBindingObserver 
   @override
   void dispose() {
     _disposed = true;
+    _hintTimer?.cancel();
     _abortCapture();
     WidgetsBinding.instance.removeObserver(this);
     _chat.removeListener(_onChatChanged);

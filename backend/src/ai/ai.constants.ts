@@ -267,4 +267,152 @@ export const AI_TOOLS: AiToolDef[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'get_customer_account',
+      description:
+        'كشف حساب عميل: كل فواتيره ومنتجاته والمبلغ الكلي والمدفوع والمعلق',
+      parameters: {
+        type: 'object',
+        properties: { customerName: { type: 'string' } },
+        required: ['customerName'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_invoice_details',
+      description: 'تفاصيل فاتورة واحدة برقمها: البنود والتاريخ والحالة',
+      parameters: {
+        type: 'object',
+        properties: { invoiceNumber: { type: 'string' } },
+        required: ['invoiceNumber'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'top_customers',
+      description: 'أفضل العملاء حسب مبلغ المشتريات',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number' },
+          fromDate: { type: 'string' },
+          toDate: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'top_products',
+      description: 'أكثر المنتجات مبيعاً',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number' },
+          fromDate: { type: 'string' },
+          toDate: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'customers_with_balance',
+      description: 'العملاء الذين عليهم مبالغ غير مدفوعة (الديون والذمم)',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'sales_by_month',
+      description: 'المبيعات شهراً بشهر',
+      parameters: {
+        type: 'object',
+        properties: { months: { type: 'number' } },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'low_stock_products',
+      description: 'المنتجات التي مخزونها قليل أو نفد',
+      parameters: {
+        type: 'object',
+        properties: {
+          threshold: { type: 'number', description: 'الحد الأقصى للمخزون' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_product_stock',
+      description: 'زيادة مخزون منتج بكمية (توريد بضاعة جديدة)',
+      parameters: {
+        type: 'object',
+        properties: {
+          productName: { type: 'string' },
+          quantity: { type: 'number' },
+        },
+        required: ['productName', 'quantity'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_invoice_item',
+      description: 'إضافة منتج إلى فاتورة موجودة برقمها',
+      parameters: {
+        type: 'object',
+        properties: {
+          invoiceNumber: { type: 'string' },
+          productName: { type: 'string' },
+          quantity: { type: 'number' },
+        },
+        required: ['invoiceNumber', 'productName', 'quantity'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'remove_invoice_item',
+      description: 'حذف منتج من فاتورة موجودة برقمها',
+      parameters: {
+        type: 'object',
+        properties: {
+          invoiceNumber: { type: 'string' },
+          productName: { type: 'string' },
+        },
+        required: ['invoiceNumber', 'productName'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_invoice_notes',
+      description: 'كتابة ملاحظة على فاتورة برقمها',
+      parameters: {
+        type: 'object',
+        properties: {
+          invoiceNumber: { type: 'string' },
+          notes: { type: 'string' },
+        },
+        required: ['invoiceNumber', 'notes'],
+      },
+    },
+  },
 ];

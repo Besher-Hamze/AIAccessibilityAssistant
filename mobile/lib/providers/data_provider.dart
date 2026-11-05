@@ -128,6 +128,13 @@ class DataProvider extends ChangeNotifier {
     return invoice;
   }
 
+  Future<void> updateInvoice(String id, Map<String, dynamic> changes) async {
+    await api.updateInvoice(id, changes);
+    await loadInvoices();
+    await loadProducts();
+    await loadSummary();
+  }
+
   Future<void> setInvoiceStatus(String id, String status) async {
     await api.updateInvoiceStatus(id, status);
     await loadInvoices();

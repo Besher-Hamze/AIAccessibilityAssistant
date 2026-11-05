@@ -8,6 +8,8 @@ import {
   Body,
   Res,
   StreamableFile,
+  Delete,
+  Request,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
@@ -36,16 +38,15 @@ export class VoiceController {
 
   @Post('speech-to-text')
   @UseInterceptors(FileInterceptor('audio'))
-  async speechToText(@UploadedFile() file: Express.Multer.File) {
+  async speechToText(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: { user: { id: string } },
+  ) {
     if (!file) {
       return { text: '', error: 'لم يتم إرسال ملف صوتي' };
     }
 
-    const formData = new FormData();
-    const blob = new Blob([new Uint8Array(file.buffer)], {
-      type: file.mimetype,
-    });
-    formData.append('file', blob, file.originalname || 'audio.wav');
+    const formData = this.audioForm(file, req.user.id);
 
     const { data } = await axios.post(
       `${this.aiServiceUrl}/stt`,
@@ -54,6 +55,50 @@ export class VoiceController {
     );
 
     return data;
+  }
+
+  /** Saves the signed-in user's voiceprint so only their voice is transcribed. */
+  @Post('voiceprint')
+  @UseInterceptors(FileInterceptor('audio'))
+  async enrollVoiceprint(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: { user: { id: string } },
+  ) {
+    if (!file) return { ok: false, error: 'لم يتم إرسال ملف صوتي' };
+    const { data } = await axios.post(
+      `${this.aiServiceUrl}/voiceprint`,
+      this.audioForm(file, req.user.id),
+      { timeout: 60000 },
+    );
+    return data;
+  }
+
+  @Get('voiceprint')
+  async voiceprintStatus(@Request() req: { user: { id: string } }) {
+    const { data } = await axios.get(
+      `${this.aiServiceUrl}/voiceprint/${req.user.id}`,
+      { timeout: 10000 },
+    );
+    return data;
+  }
+
+  @Delete('voiceprint')
+  async deleteVoiceprint(@Request() req: { user: { id: string } }) {
+    const { data } = await axios.delete(
+      `${this.aiServiceUrl}/voiceprint/${req.user.id}`,
+      { timeout: 10000 },
+    );
+    return data;
+  }
+
+  private audioForm(file: Express.Multer.File, speakerId: string) {
+    const formData = new FormData();
+    const blob = new Blob([new Uint8Array(file.buffer)], {
+      type: file.mimetype,
+    });
+    formData.append('file', blob, file.originalname || 'audio.wav');
+    formData.append('speaker_id', speakerId);
+    return formData;
   }
 
   @Post('text-to-speech')

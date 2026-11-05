@@ -156,6 +156,55 @@ void main() {
     });
   });
 
+  group('cancel and start over', () {
+    test('alone it cancels', () {
+      expect(parse('الغي')?.type, VoiceActionType.cancel);
+      expect(parse('إلغاء')?.type, VoiceActionType.cancel);
+      expect(parse('من جديد')?.type, VoiceActionType.cancel);
+    });
+
+    test('inside a real request it does not', () {
+      expect(parse('الغي الفاتورة INV-SEED-002'), isNull);
+    });
+  });
+
+  group('caption bubble and voiceprint', () {
+    final cases = {
+      'اخفي المربع': VoiceActionType.hideCaptions,
+      'شيل المربع': VoiceActionType.hideCaptions,
+      'أظهر المربع': VoiceActionType.showCaptions,
+      'سجل بصمة صوتي': VoiceActionType.enrollVoice,
+      'سجل صوتي': VoiceActionType.enrollVoice,
+      'احذف بصمة صوتي': VoiceActionType.deleteVoice,
+    };
+    cases.forEach((text, type) {
+      test(text, () => expect(parse(text)?.type, type));
+    });
+  });
+
+  test('opens the insights page', () {
+    expect(parse('افتح التحليلات')?.destination, AppDestination.insights);
+    expect(parse('الإحصائيات')?.destination, AppDestination.insights);
+  });
+
+  group('customer page', () {
+    String? q(String t) => VoiceCommandRouter.customerQuery(ArabicText.normalize(t));
+
+    test('finds the name', () {
+      expect(q('افتح العميل محمد الأحمد'), ArabicText.normalize('محمد الأحمد'));
+      expect(q('حساب خالد'), ArabicText.normalize('خالد'));
+      expect(q('كشف حساب علي الحسين'), ArabicText.normalize('علي الحسين'));
+      expect(q('افتح محمد'), ArabicText.normalize('محمد'));
+      expect(q('صفحة الزبون سارة'), ArabicText.normalize('سارة'));
+    });
+
+    test('is not a name query', () {
+      expect(q('فواتير محمد'), isNull);
+      expect(q('حساب'), isNull);
+      expect(q('كم طلعنا هالشهر'), isNull);
+    });
+  });
+
   group('wake word & confirmation', () {
     test('afterWakeWord returns the remainder', () {
       expect(VoiceCommandRouter.afterWakeWord(ArabicText.normalize('يا مساعد افتح العملاء')), 'افتح العملاء');

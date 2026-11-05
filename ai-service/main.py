@@ -1,4 +1,4 @@
-"""AI Voice Service: denoise + LSTM gender + Whisper STT + Edge TTS."""
+"""AI Voice Service: speaker focus + denoise + LSTM gender + Whisper STT + Edge TTS."""
 
 from __future__ import annotations
 
@@ -10,17 +10,19 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import edge_tts
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
 from audio.gender_rnn import GenderClassifier
-from audio.pipeline import VoicePipeline
+from audio.pipeline import VoicePipeline, load_wav_16k
+from audio.speaker import SpeakerFocus
 
 MODELS_DIR = Path(__file__).parent / "models"
 MODELS_DIR.mkdir(exist_ok=True)
+VOICEPRINTS_DIR = Path(__file__).parent / "voiceprints"
 
 
 class Settings(BaseSettings):
@@ -63,8 +65,10 @@ def load_whisper():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global pipeline
-    pipeline = VoicePipeline(GenderClassifier())
+    speaker = SpeakerFocus(MODELS_DIR / "speaker", VOICEPRINTS_DIR)
+    pipeline = VoicePipeline(GenderClassifier(), speaker)
     print("Gender LSTM ready.")
+    _ = speaker.available  # load (or download) the model before the first request
     try:
         load_whisper()
     except Exception as exc:
@@ -102,11 +106,15 @@ async def health():
         "whisper_loaded": whisper_model is not None,
         "denoise": "spectral_gating",
         "gender_model": "tiny_lstm",
+        "speaker_focus": pipeline is not None and pipeline.speaker.available,
     }
 
 
 @app.post("/stt")
-async def speech_to_text(file: UploadFile = File(...)):
+async def speech_to_text(
+    file: UploadFile = File(...),
+    speaker_id: str | None = Form(None),
+):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No audio file provided")
 
@@ -125,10 +133,24 @@ async def speech_to_text(file: UploadFile = File(...)):
         model = load_whisper()
         assert pipeline is not None
 
+        focus_info: dict = {"speaker_focus": "off"}
         try:
-            audio_path, gender = pipeline.prepare(tmp_path)
+            audio_path, gender, focus = pipeline.prepare(tmp_path, speaker_id)
             clean_path = audio_path
-        except Exception:
+            focus_info = focus.info()
+            # Nothing to transcribe: Whisper would only invent text from noise.
+            if focus.rejected or focus.mode == "no_speech":
+                return {
+                    "text": "",
+                    "raw_text": "",
+                    "confidence": 0.0,
+                    "language": "ar",
+                    "denoised": True,
+                    **gender,
+                    **focus_info,
+                }
+        except Exception as exc:
+            print(f"Audio preparation failed, using the raw recording: {exc}")
             audio_path = tmp_path
             gender = {
                 "gender": "unknown",
@@ -146,6 +168,7 @@ async def speech_to_text(file: UploadFile = File(...)):
             "language": "ar",
             "denoised": clean_path is not None,
             **gender,
+            **focus_info,
         }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -156,6 +179,46 @@ async def speech_to_text(file: UploadFile = File(...)):
                     os.unlink(p)
                 except OSError:
                     pass
+
+
+@app.post("/voiceprint")
+async def enroll_voiceprint(
+    file: UploadFile = File(...),
+    speaker_id: str = Form(...),
+):
+    """Saves this person's voice so the app listens only to them."""
+    content = await file.read()
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="Empty audio file")
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        assert pipeline is not None
+        return pipeline.speaker.enroll(load_wav_16k(tmp_path), speaker_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+@app.get("/voiceprint/{speaker_id}")
+async def voiceprint_status(speaker_id: str):
+    assert pipeline is not None
+    return {
+        "enrolled": pipeline.speaker.has_profile(speaker_id),
+        "available": pipeline.speaker.available,
+    }
+
+
+@app.delete("/voiceprint/{speaker_id}")
+async def delete_voiceprint(speaker_id: str):
+    assert pipeline is not None
+    return {"deleted": pipeline.speaker.delete_profile(speaker_id)}
 
 
 @app.post("/tts")

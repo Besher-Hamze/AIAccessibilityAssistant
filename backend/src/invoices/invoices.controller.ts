@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Put,
   Body,
   Param,
   Query,
@@ -11,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { InvoiceStatus, Role } from '@prisma/client';
 import { InvoicesService } from './invoices.service';
-import { CreateInvoiceDto } from './dto/invoice.dto';
+import { CreateInvoiceDto, UpdateInvoiceDto } from './dto/invoice.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/roles.guard';
 
@@ -46,6 +47,11 @@ export class InvoicesController {
     );
   }
 
+  @Get('insights')
+  insights() {
+    return this.invoicesService.insights();
+  }
+
   @Get('report')
   generateReport(
     @Query('customerName') customerName?: string,
@@ -71,6 +77,17 @@ export class InvoicesController {
   @Roles(Role.ADMIN, Role.USER)
   create(@Body() dto: CreateInvoiceDto) {
     return this.invoicesService.create(dto);
+  }
+
+  @Put(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateInvoiceDto,
+    @Request() req: { user: { role: Role } },
+  ) {
+    return this.invoicesService.update(id, dto, req.user.role === Role.ADMIN);
   }
 
   @Patch(':id/status')

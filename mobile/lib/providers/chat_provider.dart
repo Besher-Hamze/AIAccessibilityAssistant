@@ -35,6 +35,7 @@ class ChatProvider extends ChangeNotifier {
   String? _lastGender;
   String? _lastToolUsed;
   DateTime? _speechAudioAt;
+  int _requestId = 0;
 
   ChatProvider(this._api) {
     _initTts();
@@ -232,11 +233,14 @@ class ChatProvider extends ChangeNotifier {
   }
 
   /// Returns true when a write tool was executed (so UI can refresh data).
+  ///
+  /// [onReply] runs as soon as the answer arrives, before it is read aloud.
   Future<bool> sendTextMessage(
     String text, {
     String? speakerGender,
     String? speakerGenderAr,
     double? confidence,
+    void Function(String? tool, dynamic toolResult, bool mutated)? onReply,
   }) async {
     if (text.trim().isEmpty || _isProcessing) return false;
 
@@ -266,9 +270,11 @@ class ChatProvider extends ChangeNotifier {
     if (speakerGender != null) _lastGender = speakerGender;
     notifyListeners();
 
+    final requestId = ++_requestId;
     var mutated = false;
     try {
       final result = await _api.chat(text.trim(), model: _selectedModel);
+      if (requestId != _requestId) return false;
       _messages.removeWhere((m) => m.id == 'loading');
 
       final reply = result['reply'] as String? ?? 'تم.';
@@ -291,24 +297,50 @@ class ChatProvider extends ChangeNotifier {
 
       _isProcessing = false;
       notifyListeners();
+      onReply?.call(tool, result['toolResult'], mutated);
       if (_autoSpeak) {
         await _speak(reply);
       }
     } catch (e) {
+      if (requestId != _requestId) return false;
       _messages.removeWhere((m) => m.id == 'loading');
       _error = e.toString().replaceAll('Exception: ', '');
+      final reply = e is TimeoutException
+          ? 'استغرق الطلب وقتاً طويلاً. حاول مرة أخرى أو قل طلباً أقصر.'
+          : 'عذراً، حدث خطأ. تأكد من تشغيل الخادم و Ollama.';
       _messages.add(ChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         role: 'assistant',
-        content: 'عذراً، حدث خطأ. تأكد من تشغيل الخادم و Ollama.',
+        content: reply,
         createdAt: DateTime.now(),
       ));
+      _isProcessing = false;
+      notifyListeners();
+      // Someone who cannot see or reach the screen must still hear the failure.
+      if (_autoSpeak) await _speak(reply);
     }
 
     _isProcessing = false;
     notifyListeners();
     return mutated;
   }
+
+  /// Gives up on the answer being waited for; a late reply is ignored.
+  void cancelProcessing() {
+    if (!_isProcessing) return;
+    _requestId++;
+    _api.cancelChat();
+    _messages.removeWhere((m) => m.id == 'loading');
+    _isProcessing = false;
+    notifyListeners();
+  }
+
+  Future<Map<String, dynamic>> enrollVoiceprint(String path) =>
+      _api.enrollVoiceprint(File(path));
+
+  Future<Map<String, dynamic>> voiceprintStatus() => _api.getVoiceprintStatus();
+
+  Future<void> deleteVoiceprint() => _api.deleteVoiceprint();
 
   /// Sends a recorded WAV file to Whisper. Returns text + speaker info.
   Future<Map<String, dynamic>> transcribe(String path) async {

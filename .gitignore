@@ -50,3 +50,6 @@ backend/prisma/migrations/**/migration_lock.toml
 
 # Test coverage
 coverage/
+
+# Biometric voice profiles: never commit
+ai-service/voiceprints/

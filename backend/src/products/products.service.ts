@@ -24,6 +24,13 @@ export class ProductsService {
     });
   }
 
+  lowStock(threshold = 10) {
+    return this.prisma.product.findMany({
+      where: { stock: { lte: threshold } },
+      orderBy: { stock: 'asc' },
+    });
+  }
+
   async findOne(id: string) {
     const product = await this.prisma.product.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('المنتج غير موجود');

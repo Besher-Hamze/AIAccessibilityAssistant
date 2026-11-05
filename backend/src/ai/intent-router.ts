@@ -367,6 +367,87 @@ export function formatToolReply(
       const r = result as Record<string, unknown>;
       return `تقرير جاهز: ${r.count ?? 0} فاتورة بإجمالي ${money(r.totalAmount)} ليرة. يمكنك تنزيله من شاشة التقارير.`;
     }
+    case 'get_customer_account': {
+      const r = result as {
+        customer: { name: string };
+        stats: Record<string, unknown>;
+        products: Array<{ name: string; quantity: number }>;
+      };
+      const top = r.products
+        .slice(0, 3)
+        .map((p) => `${p.name} ${p.quantity}`)
+        .join('، ');
+      return (
+        `حساب ${r.customer.name}: ${r.stats.invoiceCount} فاتورة، ` +
+        `الإجمالي ${money(r.stats.totalAmount)} ليرة، ` +
+        `المدفوع ${money(r.stats.paidAmount)} والمعلق ${money(r.stats.pendingAmount)}.` +
+        (top ? ` أكثر ما اشتراه: ${top}.` : '')
+      );
+    }
+    case 'get_invoice_details': {
+      const inv = result as {
+        number: string;
+        total: unknown;
+        date: Date | string;
+        customer: { name: string };
+        items: Array<{ quantity: number; product: { name: string } }>;
+      };
+      const items = inv.items
+        .map((i) => `${i.product.name} ${i.quantity}`)
+        .join('، ');
+      const day = new Date(inv.date).toISOString().split('T')[0];
+      return `الفاتورة ${inv.number} للعميل ${inv.customer.name} بتاريخ ${day} بمبلغ ${money(inv.total)} ليرة: ${items}.`;
+    }
+    case 'top_customers':
+      if (!list.length) return 'لا توجد مبيعات بعد.';
+      return `أفضل العملاء: ${list
+        .map((c) => {
+          const x = c as Record<string, unknown>;
+          return `${x.name} بمبلغ ${money(x.amount)} ليرة`;
+        })
+        .join('، ')}.`;
+    case 'top_products':
+      if (!list.length) return 'لا توجد مبيعات بعد.';
+      return `أكثر المنتجات مبيعاً: ${list
+        .map((p) => {
+          const x = p as Record<string, unknown>;
+          return `${x.name} بيع منه ${x.quantity}`;
+        })
+        .join('، ')}.`;
+    case 'customers_with_balance':
+      if (!list.length) return 'لا توجد مبالغ معلقة على أي عميل.';
+      return `عليهم مبالغ معلقة: ${list
+        .map((c) => {
+          const x = c as Record<string, unknown>;
+          return `${x.name} ${money(x.amount)} ليرة`;
+        })
+        .join('، ')}.`;
+    case 'sales_by_month':
+      if (!list.length) return 'لا توجد مبيعات في هذه الفترة.';
+      return `المبيعات: ${list
+        .map((m) => {
+          const x = m as Record<string, unknown>;
+          return `${x.month}: ${money(x.amount)} ليرة`;
+        })
+        .join('، ')}.`;
+    case 'low_stock_products':
+      if (!list.length) return 'لا توجد منتجات مخزونها قليل.';
+      return `مخزونها قليل: ${list
+        .map((p) => {
+          const x = p as Record<string, unknown>;
+          return `${x.name} ${x.stock}`;
+        })
+        .join('، ')}.`;
+    case 'add_product_stock': {
+      const p = result as Record<string, unknown>;
+      return `تم توريد ${args.quantity} إلى ${p.name}. المخزون الآن ${p.stock}.`;
+    }
+    case 'add_invoice_item':
+    case 'remove_invoice_item':
+    case 'update_invoice_notes': {
+      const inv = result as Record<string, unknown>;
+      return `تم تعديل الفاتورة ${inv.number}. الإجمالي الآن ${money(inv.total)} ليرة.`;
+    }
     default:
       return 'تم تنفيذ الطلب.';
   }

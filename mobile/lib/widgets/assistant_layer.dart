@@ -82,7 +82,10 @@ class _AssistantUi extends StatelessWidget {
     final authed = context.select<AuthProvider, bool>((a) => a.isAuthenticated);
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Stack(
+      // Without a Material ancestor text renders with yellow debug underlines.
+      child: Material(
+        type: MaterialType.transparency,
+        child: Stack(
         children: [
           // The login screen shows its own large orb.
           if (!voice.expanded && authed) const _MiniAssistant(),
@@ -107,6 +110,7 @@ class _AssistantUi extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -122,6 +126,7 @@ class _MiniAssistant extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final voice = context.watch<VoiceAssistantProvider>();
+    final showCaptions = context.select<AccessibilityProvider, bool>((a) => a.showCaptions);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final phase = voice.phase;
     final active = phase == VoicePhase.listening ||
@@ -142,12 +147,16 @@ class _MiniAssistant extends StatelessWidget {
           child: Center(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
-              child: (active || voice.hint != null || phase == VoicePhase.sleeping)
+              child: showCaptions && (active || voice.hint != null || phase == VoicePhase.sleeping)
                   ? _CaptionBubble(
                       key: ValueKey('${phase.name}${caption ?? ''}'),
                       title: voice.statusLabel,
                       text: caption,
                       onTap: voice.expand,
+                      onHide: () => voice.setCaptionsVisible(false),
+                      onRestart: phase == VoicePhase.thinking || phase == VoicePhase.speaking
+                          ? voice.restartListening
+                          : null,
                     )
                   : const SizedBox.shrink(),
             ),
@@ -180,8 +189,19 @@ class _CaptionBubble extends StatelessWidget {
   final String title;
   final String? text;
   final VoidCallback onTap;
+  final VoidCallback onHide;
 
-  const _CaptionBubble({super.key, required this.title, this.text, required this.onTap});
+  /// Shown while busy: stop everything and record again.
+  final VoidCallback? onRestart;
+
+  const _CaptionBubble({
+    super.key,
+    required this.title,
+    this.text,
+    required this.onTap,
+    required this.onHide,
+    this.onRestart,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -204,14 +224,30 @@ class _CaptionBubble extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF99E9F2),
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF99E9F2),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  tooltip: 'إخفاء المربع',
+                  onPressed: onHide,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 22),
+                ),
+              ],
             ),
             if (text != null && text!.isNotEmpty) ...[
               const SizedBox(height: 4),
@@ -221,6 +257,19 @@ class _CaptionBubble extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.45),
+              ),
+            ],
+            if (onRestart != null) ...[
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.rose,
+                  minimumSize: const Size(0, 44),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                onPressed: onRestart,
+                icon: const Icon(Icons.mic_rounded, size: 20),
+                label: const Text('إيقاف وتسجيل جديد'),
               ),
             ],
           ],
@@ -327,14 +376,16 @@ class _ExpandedAssistant extends StatelessWidget {
                       onTap: () => voice.setTyping(!voice.typing),
                     ),
                     _CircleAction(
-                      icon: voice.phase == VoicePhase.speaking
-                          ? Icons.stop_rounded
-                          : (voice.phase == VoicePhase.listening
-                              ? Icons.send_rounded
-                              : Icons.mic_rounded),
-                      label: voice.phase == VoicePhase.speaking
-                          ? 'إيقاف'
-                          : (voice.phase == VoicePhase.listening ? 'إرسال الآن' : 'تحدّث'),
+                      icon: switch (voice.phase) {
+                        VoicePhase.speaking || VoicePhase.thinking => Icons.stop_rounded,
+                        VoicePhase.listening => Icons.send_rounded,
+                        _ => Icons.mic_rounded,
+                      },
+                      label: switch (voice.phase) {
+                        VoicePhase.speaking || VoicePhase.thinking => 'إيقاف وتسجيل جديد',
+                        VoicePhase.listening => 'إرسال الآن',
+                        _ => 'تحدّث',
+                      },
                       big: true,
                       accent: true,
                       onTap: voice.onOrbTap,
@@ -366,7 +417,12 @@ class _Stage extends StatelessWidget {
     final voice = context.watch<VoiceAssistantProvider>();
     final size = MediaQuery.sizeOf(context);
     final orbSize = math.min(size.width * 0.82, math.min(size.height * 0.42, 380.0));
-    final reply = voice.phase == VoicePhase.listening && voice.heard == null ? null : voice.reply;
+    // While waiting for an answer the previous reply must not look like it.
+    final reply = switch (voice.phase) {
+      VoicePhase.thinking => null,
+      VoicePhase.listening when voice.heard == null => null,
+      _ => voice.enrolling ? null : voice.reply,
+    };
 
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(

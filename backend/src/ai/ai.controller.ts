@@ -6,7 +6,9 @@ import {
   Body,
   UseGuards,
   Request,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { IsBoolean, IsOptional, IsString, MinLength } from 'class-validator';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -39,13 +41,21 @@ export class AiController {
   async chat(
     @Body() dto: ChatDto,
     @Request() req: { user: { id: string; role: Role } },
+    @Res({ passthrough: true }) res: Response,
   ) {
+    // The user cancelled in the app: stop the model so the next command is not
+    // stuck behind it.
+    const abort = new AbortController();
+    res.on('close', () => {
+      if (!res.writableEnded) abort.abort();
+    });
     return this.aiAgent.processMessage(
       req.user.id,
       dto.message,
       req.user.role,
       dto.speak ?? true,
       dto.model,
+      abort.signal,
     );
   }
 

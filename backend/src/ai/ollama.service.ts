@@ -24,6 +24,9 @@ export interface OllamaMessage {
  */
 const SPEED_OPTIONS = { keep_alive: '30m', think: false } as const;
 
+/** A voice user cannot wait minutes for an answer; fall back instead. */
+const REQUEST_TIMEOUT_MS = 70000;
+
 @Injectable()
 export class OllamaService {
   private readonly logger = new Logger(OllamaService.name);
@@ -59,7 +62,11 @@ export class OllamaService {
     }
   }
 
-  async chat(messages: OllamaMessage[], model?: string): Promise<OllamaMessage> {
+  async chat(
+    messages: OllamaMessage[],
+    model?: string,
+    signal?: AbortSignal,
+  ): Promise<OllamaMessage> {
     const selectedModel = this.resolveModel(model);
     const today = new Date().toISOString().split('T')[0];
     const systemPrompt = buildSystemPrompt(today);
@@ -77,7 +84,7 @@ export class OllamaService {
       const { data } = await axios.post(
         `${this.baseUrl}/api/chat`,
         payload,
-        { timeout: 180000 },
+        { timeout: REQUEST_TIMEOUT_MS, signal },
       );
       const normalized = normalizeOllamaMessage(data.message);
       if (normalized.tool_calls?.length) {
@@ -99,21 +106,23 @@ export class OllamaService {
         this.logger.warn(
           `No tool from ${selectedModel}, using JSON function-pick fallback`,
         );
-        return this.chatJsonFallback(messages, selectedModel);
+        return this.chatJsonFallback(messages, selectedModel, signal);
       }
 
       return normalized;
     } catch (error) {
+      if (signal?.aborted) throw error;
       this.logger.warn(
         `Ollama tools API failed for ${selectedModel}, trying JSON mode`,
       );
-      return this.chatJsonFallback(messages, selectedModel);
+      return this.chatJsonFallback(messages, selectedModel, signal);
     }
   }
 
   private async chatJsonFallback(
     messages: OllamaMessage[],
     selectedModel: string,
+    signal?: AbortSignal,
   ): Promise<OllamaMessage> {
     const jsonPrompt = buildJsonFallbackPrompt(
       new Date().toISOString().split('T')[0],
@@ -129,7 +138,7 @@ export class OllamaService {
         ...SPEED_OPTIONS,
         options: { temperature: 0 },
       },
-      { timeout: 180000 },
+      { timeout: REQUEST_TIMEOUT_MS, signal },
     );
 
     const content = data.message?.content ?? '{}';
@@ -189,7 +198,7 @@ export class OllamaService {
         ...SPEED_OPTIONS,
         options: { temperature: 0.3 },
       },
-      { timeout: 180000 },
+      { timeout: REQUEST_TIMEOUT_MS },
     );
 
     return (data.message?.content as string) ?? 'تم تنفيذ العملية بنجاح.';

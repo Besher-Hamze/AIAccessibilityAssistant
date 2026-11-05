@@ -1,12 +1,32 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../models/customer.dart';
+import '../models/customer_account.dart';
 import '../models/invoice.dart';
 import '../models/product.dart';
 
+/// A dead or unreachable server must end in an error the app can recover from,
+/// never in a request that waits forever.
+class _TimeoutClient extends http.BaseClient {
+  final Duration timeout;
+  final http.Client _inner = http.Client();
+
+  _TimeoutClient(this.timeout);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) =>
+      _inner.send(request).timeout(timeout);
+
+  @override
+  void close() => _inner.close();
+}
+
 class ApiService {
+  final http.Client _http = _TimeoutClient(const Duration(seconds: 45));
+  http.Client? _chatClient;
   String? _token;
 
   void setToken(String? token) => _token = token;
@@ -17,7 +37,7 @@ class ApiService {
       };
 
   Future<Map<String, dynamic>> _get(String path) async {
-    final response = await http.get(
+    final response = await _http.get(
       Uri.parse('${ApiConfig.baseUrl}$path'),
       headers: _headers,
     );
@@ -25,7 +45,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
-    final response = await http.post(
+    final response = await _http.post(
       Uri.parse('${ApiConfig.baseUrl}$path'),
       headers: _headers,
       body: jsonEncode(body),
@@ -34,7 +54,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> _put(String path, Map<String, dynamic> body) async {
-    final response = await http.put(
+    final response = await _http.put(
       Uri.parse('${ApiConfig.baseUrl}$path'),
       headers: _headers,
       body: jsonEncode(body),
@@ -43,7 +63,7 @@ class ApiService {
   }
 
   Future<void> _delete(String path) async {
-    final response = await http.delete(
+    final response = await _http.delete(
       Uri.parse('${ApiConfig.baseUrl}$path'),
       headers: _headers,
     );
@@ -67,7 +87,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await http.post(
+    final response = await _http.post(
       Uri.parse('${ApiConfig.baseUrl}/auth/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
@@ -76,11 +96,30 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> chat(String message, {String? model}) async {
-    return await _post('/ai/chat', {
-      'message': message,
-      'speak': true,
-      if (model != null && model.isNotEmpty) 'model': model,
-    }) as Map<String, dynamic>;
+    // Its own client so that closing it (cancelChat) drops just this request,
+    // which also stops the model on the server.
+    final client = _TimeoutClient(const Duration(seconds: 90));
+    _chatClient = client;
+    try {
+      final response = await client.post(
+        Uri.parse('${ApiConfig.baseUrl}/ai/chat'),
+        headers: _headers,
+        body: jsonEncode({
+          'message': message,
+          'speak': true,
+          if (model != null && model.isNotEmpty) 'model': model,
+        }),
+      );
+      return _decode(response) as Map<String, dynamic>;
+    } finally {
+      client.close();
+      if (identical(_chatClient, client)) _chatClient = null;
+    }
+  }
+
+  void cancelChat() {
+    _chatClient?.close();
+    _chatClient = null;
   }
 
   Future<Map<String, dynamic>> getAiModels() async {
@@ -88,7 +127,7 @@ class ApiService {
   }
 
   Future<List<dynamic>> getChatHistory() async {
-    final response = await http.get(
+    final response = await _http.get(
       Uri.parse('${ApiConfig.baseUrl}/ai/history'),
       headers: _headers,
     );
@@ -111,13 +150,35 @@ class ApiService {
     request.files.add(
       await http.MultipartFile.fromPath('audio', audioFile.path),
     );
-    final streamed = await request.send();
+    final streamed = await _http.send(request);
     final response = await http.Response.fromStream(streamed);
     return _decode(response) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> enrollVoiceprint(File audioFile) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/voice/voiceprint'),
+    );
+    if (_token != null) {
+      request.headers['Authorization'] = 'Bearer $_token';
+    }
+    request.files.add(
+      await http.MultipartFile.fromPath('audio', audioFile.path),
+    );
+    final streamed = await _http.send(request);
+    final response = await http.Response.fromStream(streamed);
+    return _decode(response) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getVoiceprintStatus() async {
+    return await _get('/voice/voiceprint') as Map<String, dynamic>;
+  }
+
+  Future<void> deleteVoiceprint() => _delete('/voice/voiceprint');
+
   Future<List<int>> textToSpeech(String text) async {
-    final response = await http.post(
+    final response = await _http.post(
       Uri.parse('${ApiConfig.baseUrl}/voice/text-to-speech'),
       headers: _headers,
       body: jsonEncode({'text': text}),
@@ -136,7 +197,7 @@ class ApiService {
     final q = search != null && search.isNotEmpty
         ? '?search=${Uri.encodeComponent(search)}'
         : '';
-    final response = await http.get(
+    final response = await _http.get(
       Uri.parse('${ApiConfig.baseUrl}/customers$q'),
       headers: _headers,
     );
@@ -156,11 +217,16 @@ class ApiService {
 
   Future<void> deleteCustomer(String id) => _delete('/customers/$id');
 
+  Future<CustomerAccount> getCustomerAccount(String id) async {
+    final json = await _get('/customers/$id/account') as Map<String, dynamic>;
+    return CustomerAccount.fromJson(json);
+  }
+
   Future<List<Product>> getProducts({String? search}) async {
     final q = search != null && search.isNotEmpty
         ? '?search=${Uri.encodeComponent(search)}'
         : '';
-    final response = await http.get(
+    final response = await _http.get(
       Uri.parse('${ApiConfig.baseUrl}/products$q'),
       headers: _headers,
     );
@@ -192,7 +258,7 @@ class ApiService {
       params.add('status=$status');
     }
     final q = params.isEmpty ? '' : '?${params.join('&')}';
-    final response = await http.get(
+    final response = await _http.get(
       Uri.parse('${ApiConfig.baseUrl}/invoices$q'),
       headers: _headers,
     );
@@ -210,8 +276,17 @@ class ApiService {
     return Invoice.fromJson(json);
   }
 
+  Future<Invoice> updateInvoice(String id, Map<String, dynamic> data) async {
+    final json = await _put('/invoices/$id', data) as Map<String, dynamic>;
+    return Invoice.fromJson(json);
+  }
+
+  Future<Map<String, dynamic>> getInsights() async {
+    return await _get('/invoices/insights') as Map<String, dynamic>;
+  }
+
   Future<Invoice> updateInvoiceStatus(String id, String status) async {
-    final response = await http.patch(
+    final response = await _http.patch(
       Uri.parse('${ApiConfig.baseUrl}/invoices/$id/status'),
       headers: _headers,
       body: jsonEncode({'status': status}),
@@ -235,7 +310,7 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getAuditLogs({int limit = 50}) async {
-    final response = await http.get(
+    final response = await _http.get(
       Uri.parse('${ApiConfig.baseUrl}/audit?limit=$limit'),
       headers: _headers,
     );
@@ -244,7 +319,7 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getUsers() async {
-    final response = await http.get(
+    final response = await _http.get(
       Uri.parse('${ApiConfig.baseUrl}/auth/users'),
       headers: _headers,
     );

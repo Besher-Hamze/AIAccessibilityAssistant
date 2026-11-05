@@ -4,10 +4,12 @@ import '../providers/accessibility_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/navigation_provider.dart';
+import '../providers/voice_assistant_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/server_settings_card.dart';
 import 'audit_screen.dart';
 import 'help_screen.dart';
+import 'insights_screen.dart';
 import 'users_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -19,6 +21,7 @@ class SettingsScreen extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final chat = context.watch<ChatProvider>();
     final nav = context.read<NavigationProvider>();
+    final voice = context.watch<VoiceAssistantProvider>();
 
     final width = MediaQuery.sizeOf(context).width;
     final side = width > 820 ? (width - 780) / 2 : 16.0;
@@ -105,6 +108,14 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
         ),
+        _SwitchTile(
+          title: 'إظهار مربع النص فوق الدائرة',
+          subtitle: 'أخفِه لتبقى الدائرة وحدها. يمكنك أيضاً قول: اخفي المربع',
+          value: a11y.showCaptions,
+          onChanged: a11y.setShowCaptions,
+          icon: Icons.subtitles_rounded,
+        ),
+        _VoiceprintCard(voice: voice),
         _ModelPicker(chat: chat),
         const SizedBox(height: 18),
         const Text(
@@ -180,6 +191,16 @@ class SettingsScreen extends StatelessWidget {
             nav.push(const HelpScreen());
           },
         ),
+        const SizedBox(height: 8),
+        ListTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          tileColor: Colors.white,
+          leading: const Icon(Icons.insights_rounded, color: AppColors.primary),
+          title: const Text('التحليلات', style: TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: const Text('أفضل العملاء والمنتجات، المبالغ المعلقة، المبيعات'),
+          trailing: const Icon(Icons.chevron_left),
+          onTap: () => nav.push(const InsightsScreen()),
+        ),
         if (auth.user?.isAdmin == true) ...[
           const SizedBox(height: 8),
           ListTile(
@@ -241,6 +262,74 @@ class _SwitchTile extends StatelessWidget {
         secondary: Icon(icon, color: AppColors.primary),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Text(subtitle, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+      ),
+    );
+  }
+}
+
+/// "Listen only to me": records the user's voiceprint.
+class _VoiceprintCard extends StatelessWidget {
+  final VoiceAssistantProvider voice;
+
+  const _VoiceprintCard({required this.voice});
+
+  @override
+  Widget build(BuildContext context) {
+    final enrolled = voice.hasVoiceprint;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.navy.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                enrolled ? Icons.verified_user_rounded : Icons.record_voice_over_rounded,
+                color: enrolled ? AppColors.success : AppColors.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('بصمة صوتي', style: TextStyle(fontWeight: FontWeight.w800)),
+                    Text(
+                      enrolled
+                          ? 'يستمع المساعد إليك أنت فقط ويتجاهل الأصوات الأخرى'
+                          : 'بدون بصمة يركّز على المتكلم الأساسي في كل تسجيل',
+                      style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  onPressed: voice.enrolling ? null : voice.enrollVoice,
+                  child: Text(enrolled ? 'إعادة التسجيل' : 'سجّل بصمتي'),
+                ),
+              ),
+              if (enrolled) ...[
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger),
+                  onPressed: voice.deleteVoice,
+                  child: const Text('حذف'),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }

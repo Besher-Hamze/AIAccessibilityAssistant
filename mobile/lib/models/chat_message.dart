@@ -79,6 +79,17 @@ class ChatMessage {
       'update_invoice_status': 'حالة فاتورة',
       'get_accounting_summary': 'ملخص المحاسبة',
       'generate_report': 'تقرير',
+      'get_customer_account': 'كشف حساب',
+      'get_invoice_details': 'تفاصيل فاتورة',
+      'top_customers': 'أفضل العملاء',
+      'top_products': 'أكثر المنتجات مبيعاً',
+      'customers_with_balance': 'مبالغ معلقة',
+      'sales_by_month': 'مبيعات شهرية',
+      'low_stock_products': 'مخزون قليل',
+      'add_product_stock': 'توريد مخزون',
+      'add_invoice_item': 'إضافة بند',
+      'remove_invoice_item': 'حذف بند',
+      'update_invoice_notes': 'ملاحظة فاتورة',
     };
     final source = switch (intent) {
       'ollama' => 'النموذج',

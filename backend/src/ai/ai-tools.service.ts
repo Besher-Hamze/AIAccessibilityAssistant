@@ -178,6 +178,84 @@ export class AiToolsService {
           toDate: args.toDate ? new Date(String(args.toDate)) : undefined,
         });
 
+      case 'get_customer_account':
+        return this.customers.getAccountByName(String(args.customerName ?? ''));
+
+      case 'get_invoice_details':
+        return this.invoices.findByNumber(String(args.invoiceNumber));
+
+      case 'top_customers':
+        return this.invoices.topCustomers(
+          args.limit ? Number(args.limit) : 5,
+          args.fromDate ? new Date(String(args.fromDate)) : undefined,
+          args.toDate ? new Date(String(args.toDate)) : undefined,
+        );
+
+      case 'top_products':
+        return this.invoices.topProducts(
+          args.limit ? Number(args.limit) : 5,
+          args.fromDate ? new Date(String(args.fromDate)) : undefined,
+          args.toDate ? new Date(String(args.toDate)) : undefined,
+        );
+
+      case 'customers_with_balance':
+        return this.invoices.customersWithBalance();
+
+      case 'sales_by_month':
+        return this.invoices.salesByMonth(args.months ? Number(args.months) : 6);
+
+      case 'low_stock_products':
+        return this.products.lowStock(
+          args.threshold !== undefined ? Number(args.threshold) : 10,
+        );
+
+      case 'add_product_stock': {
+        this.assertAdmin(userRole);
+        const product = await this.prisma.product.findFirst({
+          where: {
+            name: {
+              contains: String(args.productName ?? ''),
+              mode: 'insensitive',
+            },
+          },
+        });
+        if (!product) throw new BadRequestException('المنتج غير موجود');
+        return this.products.update(
+          product.id,
+          { stock: product.stock + Number(args.quantity) },
+          true,
+        );
+      }
+
+      case 'add_invoice_item':
+        this.assertAdmin(userRole);
+        return this.invoices.addItemByName(
+          String(args.invoiceNumber),
+          String(args.productName),
+          Number(args.quantity),
+          isAdmin,
+        );
+
+      case 'remove_invoice_item':
+        this.assertAdmin(userRole);
+        return this.invoices.removeItemByName(
+          String(args.invoiceNumber),
+          String(args.productName),
+          isAdmin,
+        );
+
+      case 'update_invoice_notes': {
+        this.assertAdmin(userRole);
+        const invoice = await this.invoices.findByNumber(
+          String(args.invoiceNumber),
+        );
+        return this.invoices.update(
+          invoice.id,
+          { notes: String(args.notes ?? '') },
+          isAdmin,
+        );
+      }
+
       default:
         return { error: `أداة غير معروفة: ${toolName}` };
     }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/customer.dart';
 import '../providers/auth_provider.dart';
 import '../providers/data_provider.dart';
+import '../providers/navigation_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/customer_form.dart';
 import '../widgets/empty_state.dart';
+import 'customer_detail_screen.dart';
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
@@ -22,103 +24,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
     super.dispose();
   }
 
-  Future<void> _openForm({Customer? customer}) async {
-    final isAdmin = context.read<AuthProvider>().user?.isAdmin == true;
-    if (customer != null && !isAdmin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('التعديل متاح للمدير فقط')),
-      );
-      return;
-    }
-
-    final name = TextEditingController(text: customer?.name ?? '');
-    final phone = TextEditingController(text: customer?.phone ?? '');
-    final email = TextEditingController(text: customer?.email ?? '');
-    final address = TextEditingController(text: customer?.address ?? '');
-    final formKey = GlobalKey<FormState>();
-
-    final saved = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.viewInsetsOf(ctx).bottom + 20),
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  customer == null ? 'إضافة عميل' : 'تعديل عميل',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: name,
-                  decoration: const InputDecoration(labelText: 'الاسم'),
-                  validator: (v) => v != null && v.trim().length >= 2 ? null : 'اسم مطلوب',
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: phone,
-                  decoration: const InputDecoration(labelText: 'الهاتف'),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: email,
-                  decoration: const InputDecoration(labelText: 'البريد'),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: address,
-                  decoration: const InputDecoration(labelText: 'العنوان'),
-                ),
-                const SizedBox(height: 18),
-                FilledButton(
-                  onPressed: () async {
-                    if (!formKey.currentState!.validate()) return;
-                    try {
-                      await context.read<DataProvider>().saveCustomer(
-                        {
-                          'name': name.text.trim(),
-                          if (phone.text.trim().isNotEmpty) 'phone': phone.text.trim(),
-                          if (email.text.trim().isNotEmpty) 'email': email.text.trim(),
-                          if (address.text.trim().isNotEmpty) 'address': address.text.trim(),
-                        },
-                        id: customer?.id,
-                      );
-                      if (ctx.mounted) Navigator.pop(ctx, true);
-                    } catch (e) {
-                      if (ctx.mounted) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('حفظ'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (saved == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم الحفظ بنجاح')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final data = context.watch<DataProvider>();
@@ -126,7 +31,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(),
+        onPressed: () => showCustomerForm(context),
         icon: const Icon(Icons.person_add_alt_1_rounded),
         label: const Text('عميل جديد'),
       ),
@@ -167,13 +72,19 @@ class _CustomersScreenState extends State<CustomersScreen> {
                           separatorBuilder: (context, index) => const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final c = data.customers[index];
-                            return Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
+                            return Material(
+                              color: Colors.white,
+                              shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.navy.withValues(alpha: 0.06)),
+                                side: BorderSide(color: AppColors.navy.withValues(alpha: 0.06)),
                               ),
+                              clipBehavior: Clip.antiAlias,
+                              child: InkWell(
+                              onTap: () => context
+                                  .read<NavigationProvider>()
+                                  .push(CustomerDetailScreen(customerId: c.id)),
+                              child: Padding(
+                              padding: const EdgeInsets.all(14),
                               child: Row(
                                 children: [
                                   CircleAvatar(
@@ -209,7 +120,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                                   PopupMenuButton<String>(
                                     onSelected: (value) async {
                                       if (value == 'edit') {
-                                        await _openForm(customer: c);
+                                        await showCustomerForm(context, customer: c);
                                       } else if (value == 'delete' && isAdmin) {
                                         final ok = await showDialog<bool>(
                                           context: context,
@@ -241,6 +152,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
                                     ],
                                   ),
                                 ],
+                              ),
+                              ),
                               ),
                             );
                           },

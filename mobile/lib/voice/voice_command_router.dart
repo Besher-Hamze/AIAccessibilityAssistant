@@ -11,6 +11,7 @@ enum AppDestination {
   users,
   audit,
   newInvoice,
+  insights,
 }
 
 enum VoiceActionType {
@@ -46,6 +47,11 @@ enum VoiceActionType {
   date,
   help,
   typeText,
+  cancel,
+  hideCaptions,
+  showCaptions,
+  enrollVoice,
+  deleteVoice,
 }
 
 class VoiceAction {
@@ -125,6 +131,7 @@ class VoiceCommandRouter {
     AppDestination.settings: _n(['اعداد', 'ضبط', 'وصولي', 'سيتنج', 'settings']),
     AppDestination.help: _n(['اوامر', 'دليل', 'تعليمات']),
     AppDestination.users: _n(['مستخدمين']),
+    AppDestination.insights: _n(['تحليلات', 'احصائيات', 'إحصاءات']),
   };
 
   static final _scrollDownWords = _n([
@@ -154,6 +161,7 @@ class VoiceCommandRouter {
     AppDestination.help: _n(['دليل الأوامر', 'الأوامر', 'اوامر', 'التعليمات', 'الدليل']),
     AppDestination.users: _n(['إدارة المستخدمين', 'المستخدمين', 'مستخدمين']),
     AppDestination.audit: _n(['سجل العمليات', 'السجل', 'العمليات']),
+    AppDestination.insights: _n(['التحليلات', 'الإحصائيات', 'الاحصائيات']),
   };
 
   /// Ordered: more specific commands come before ones they could be confused with.
@@ -164,6 +172,21 @@ class VoiceCommandRouter {
     (VoiceActionType.clearChat, _n([
       'امسح المحادثة', 'احذف المحادثة', 'مسح المحادثة', 'نظف المحادثة', 'امسح الرسائل', 'احذف الرسائل',
     ]), 6),
+    (VoiceActionType.deleteVoice, _n([
+      'احذف بصمة صوتي', 'امسح بصمة صوتي', 'احذف البصمة', 'امسح البصمة',
+    ]), 5),
+    (VoiceActionType.enrollVoice, _n([
+      'سجل بصمة صوتي', 'سجل صوتي', 'بصمة صوتي', 'سجل بصمتي', 'اسمعني انا بس', 'اسمع صوتي بس',
+    ]), 5),
+    (VoiceActionType.hideCaptions, _n([
+      'اخفي المربع', 'خبي المربع', 'شيل المربع', 'سكر المربع', 'اخفي النص', 'خبي النص', 'شيل النص',
+    ]), 4),
+    (VoiceActionType.showCaptions, _n([
+      'اظهر المربع', 'رجع المربع', 'وريني المربع', 'اظهر النص', 'رجع النص', 'وريني النص',
+    ]), 4),
+    (VoiceActionType.cancel, _n([
+      'الغي', 'الغيها', 'إلغاء', 'الغاء', 'كنسل', 'من جديد', 'ابدأ من جديد', 'من الاول', 'بلاش',
+    ]), 1), // Alone only: "الغي الفاتورة INV-002" is a request for the AI.
     (VoiceActionType.collapse, _n([
       'سكر المساعد', 'اخفي المساعد', 'صغر المساعد', 'اغلق المساعد', 'خبي المساعد', 'سكر الدائرة',
     ]), 5),
@@ -413,6 +436,33 @@ class VoiceCommandRouter {
       return const VoiceAction(VoiceActionType.filterInvoices);
     }
     return null;
+  }
+
+  // Not 'على' or 'لي': normalized, they read like the common names 'علي'.
+  static final _customerOpeners = _n([
+    'افتح', 'افتحلي', 'روح', 'رح', 'خدني', 'خذني', 'وديني', 'ورجيني', 'فرجيني', 'وريني', 'شوف',
+    'اعرض', 'ع', 'عل', 'لعند', 'صفحة', 'ملف', 'حساب', 'كشف', 'العميل', 'الزبون',
+    'عميل', 'زبون',
+  ]).toSet();
+  static final _customerNouns = _n(['صفحة', 'ملف', 'حساب', 'كشف', 'العميل', 'الزبون', 'عميل', 'زبون']).toSet();
+
+  /// The name in "افتح العميل محمد", "حساب خالد", "كشف حساب علي الحسين".
+  /// Only a real customer of that name should open a page, so the caller
+  /// checks it against the customer list before acting on it.
+  static String? customerQuery(String normalized) {
+    final words = _stripFillers(normalized).split(' ').where((w) => w.isNotEmpty).toList();
+    var i = 0;
+    var opener = false;
+    var noun = false;
+    while (i < words.length && _customerOpeners.contains(words[i])) {
+      opener = true;
+      if (_customerNouns.contains(words[i])) noun = true;
+      i++;
+    }
+    if (!opener || i >= words.length || words.length - i > 4) return null;
+    final name = words.sublist(i).join(' ');
+    // A bare "ع محمد" is not enough; "افتح محمد" and "حساب محمد" are.
+    return noun || _isNavVerb(words.first) ? name : null;
   }
 
   static final _sequenceSplit = RegExp(r'[،,؛;]|\s+(?:ثم|بعدين|وبعدين|وبعدها|بعدها)\s+');

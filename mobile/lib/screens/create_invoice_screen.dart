@@ -3,11 +3,16 @@ import 'package:provider/provider.dart';
 import '../models/customer.dart';
 import '../models/product.dart';
 import '../providers/data_provider.dart';
+import '../providers/navigation_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
+import 'customer_detail_screen.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
-  const CreateInvoiceScreen({super.key});
+  /// Opened from a customer's page: that customer is already chosen.
+  final String? initialCustomerId;
+
+  const CreateInvoiceScreen({super.key, this.initialCustomerId});
 
   @override
   State<CreateInvoiceScreen> createState() => _CreateInvoiceScreenState();
@@ -19,6 +24,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final _notes = TextEditingController();
   String _status = 'PENDING';
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final id = widget.initialCustomerId;
+    if (id != null) {
+      final match = context.read<DataProvider>().customers.where((c) => c.id == id);
+      if (match.isNotEmpty) _customer = match.first;
+    }
+  }
 
   @override
   void dispose() {
@@ -63,8 +78,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         if (_notes.text.trim().isNotEmpty) 'notes': _notes.text.trim(),
       });
       if (mounted) {
+        final customerId = _customer!.id;
+        final nav = context.read<NavigationProvider>();
+        final fromCustomerPage = widget.initialCustomerId != null;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إنشاء الفاتورة')),
+          SnackBar(
+            content: const Text('تم إنشاء الفاتورة'),
+            action: fromCustomerPage
+                ? null
+                : SnackBarAction(
+                    label: 'صفحة العميل',
+                    onPressed: () => nav.push(CustomerDetailScreen(customerId: customerId)),
+                  ),
+          ),
         );
         Navigator.pop(context, true);
       }
@@ -97,6 +123,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   .toList(),
               onChanged: (v) => setState(() => _customer = v),
             ),
+            if (_customer != null)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: () => context
+                      .read<NavigationProvider>()
+                      .push(CustomerDetailScreen(customerId: _customer!.id)),
+                  icon: const Icon(Icons.person_outline_rounded),
+                  label: Text('صفحة ${_customer!.name}'),
+                ),
+              ),
             const SizedBox(height: 16),
             const Text('المنتجات', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 8),

@@ -5,12 +5,15 @@ import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/data_provider.dart';
 import '../providers/demo_provider.dart';
+import '../providers/navigation_provider.dart';
 import '../providers/voice_assistant_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
 import '../utils/report_pdf_helper.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/voice_orb.dart';
+import 'customer_detail_screen.dart';
+import 'insights_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -70,6 +73,13 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: Icons.insights_rounded,
+            label: 'التحليلات: أفضل العملاء، الديون، المبيعات',
+            color: AppColors.primary,
+            onTap: () => context.read<NavigationProvider>().push(const InsightsScreen()),
           ),
           if (demo.status != null) ...[
             const SizedBox(height: 8),
@@ -181,9 +191,21 @@ class DashboardScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            customer?['name']?.toString() ?? '',
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                          InkWell(
+                            onTap: inv['customerId'] == null
+                                ? null
+                                : () => context.read<NavigationProvider>().push(
+                                      CustomerDetailScreen(customerId: inv['customerId'].toString()),
+                                    ),
+                            child: Text(
+                              customer?['name']?.toString() ?? '',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: AppColors.primary,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
                           ),
                           Text(
                             inv['number']?.toString() ?? '',

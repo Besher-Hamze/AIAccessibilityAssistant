@@ -3,12 +3,15 @@ import 'package:provider/provider.dart';
 import '../models/invoice.dart';
 import '../providers/auth_provider.dart';
 import '../providers/data_provider.dart';
+import '../providers/navigation_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
 import '../utils/report_pdf_helper.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/status_badge.dart';
 import 'create_invoice_screen.dart';
+import 'customer_detail_screen.dart';
+import 'edit_invoice_screen.dart';
 
 class InvoicesScreen extends StatefulWidget {
   const InvoicesScreen({super.key});
@@ -55,7 +58,11 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(full.customerName, style: const TextStyle(color: AppColors.muted)),
+                _CustomerLink(
+                  name: full.customerName,
+                  customerId: full.customerId,
+                  closeFirst: ctx,
+                ),
                 Text(AppFormat.date(full.date), style: const TextStyle(color: AppColors.muted, fontSize: 12)),
                 if (full.notes != null) ...[
                   const SizedBox(height: 8),
@@ -80,8 +87,19 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                     Text(AppFormat.money(full.total), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
                   ],
                 ),
-                if (isAdmin && full.status != 'CANCELLED') ...[
+                if (isAdmin) ...[
                   const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      context.read<NavigationProvider>().push(EditInvoiceScreen(invoice: full));
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('تعديل الفاتورة'),
+                  ),
+                ],
+                if (isAdmin && full.status != 'CANCELLED') ...[
+                  const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     children: [
@@ -91,7 +109,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                             await data.setInvoiceStatus(full.id, 'PAID');
                             if (ctx.mounted) Navigator.pop(ctx);
                           },
-                          child: const Text('تعليمفع'),
+                          child: const Text('تعليم كمدفوعة'),
                         ),
                       if (full.status != 'PENDING')
                         OutlinedButton(
@@ -240,7 +258,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(inv.number, style: const TextStyle(fontWeight: FontWeight.w800)),
-                                          Text(inv.customerName, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                                          _CustomerLink(name: inv.customerName, customerId: inv.customerId),
                                           Text(AppFormat.date(inv.date), style: const TextStyle(color: AppColors.muted, fontSize: 11)),
                                         ],
                                       ),
@@ -262,6 +280,48 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A customer's name that opens their page when tapped.
+class _CustomerLink extends StatelessWidget {
+  final String name;
+  final String customerId;
+
+  /// Bottom sheet to close before opening the page.
+  final BuildContext? closeFirst;
+
+  const _CustomerLink({required this.name, required this.customerId, this.closeFirst});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'صفحة العميل $name',
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: customerId.isEmpty
+            ? null
+            : () {
+                final nav = context.read<NavigationProvider>();
+                final sheet = closeFirst;
+                if (sheet != null) Navigator.pop(sheet);
+                nav.push(CustomerDetailScreen(customerId: customerId));
+              },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            name,
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
       ),
     );
   }

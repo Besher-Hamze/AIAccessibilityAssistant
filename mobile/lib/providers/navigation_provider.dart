@@ -12,6 +12,9 @@ class NavigationProvider extends ChangeNotifier {
 
   int _tab = 0;
 
+  /// Set by a detail screen so "اقرأ الشاشة" can describe what is on it.
+  String Function()? subpageReader;
+
   int get tab => _tab;
   bool get hasPushedRoute => _routeScroll.isNotEmpty;
   BuildContext? get context => navigatorKey.currentContext;

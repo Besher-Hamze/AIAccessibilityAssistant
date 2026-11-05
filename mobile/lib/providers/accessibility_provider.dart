@@ -16,6 +16,9 @@ class AccessibilityProvider extends ChangeNotifier {
 
   double speechRate = defaultSpeechRate;
 
+  /// The text bubble above the orb. Hidden, only the orb remains.
+  bool showCaptions = true;
+
   bool _loaded = false;
   bool get loaded => _loaded;
 
@@ -27,6 +30,7 @@ class AccessibilityProvider extends ChangeNotifier {
     handsFree = prefs.getBool('a11y_hands_free') ?? true;
     autoSleep = prefs.getBool('a11y_auto_sleep') ?? true;
     speechRate = prefs.getDouble('a11y_speech_rate') ?? defaultSpeechRate;
+    showCaptions = prefs.getBool('a11y_show_captions') ?? true;
     _loaded = true;
     notifyListeners();
   }
@@ -64,6 +68,12 @@ class AccessibilityProvider extends ChangeNotifier {
     autoSleep = value;
     notifyListeners();
     await _save('a11y_auto_sleep', value);
+  }
+
+  Future<void> setShowCaptions(bool value) async {
+    showCaptions = value;
+    notifyListeners();
+    await _save('a11y_show_captions', value);
   }
 
   Future<void> setSpeechRate(double value) async {
